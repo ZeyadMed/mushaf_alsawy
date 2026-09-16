@@ -1,0 +1,96 @@
+import 'package:flutter/cupertino.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
+import '../bloc/features/auth/profile/model/user_model.dart';
+
+
+class CacheManager {
+  static setData(String key, dynamic value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    debugPrint(
+        'SharedPreferencesHelper: setData with key: $key & value: $value');
+    if (value is Map<String, dynamic>) {
+      prefs.setString(key, jsonEncode(value));
+    } else {
+      switch (value.runtimeType) {
+        case const (String):
+          prefs.setString(key, value);
+          break;
+        case const (int):
+          prefs.setInt(key, value);
+          break;
+        case const (double):
+          prefs.setDouble(key, value);
+          break;
+        case const (bool):
+          prefs.setBool(key, value);
+          break;
+        case const (List):
+          prefs.setStringList(key, value);
+          break;
+        default:
+          debugPrint('SharedPreferencesHelper: No Type Matched!');
+          return null;
+      }
+    }
+  }
+
+  static getData(String key) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    debugPrint('SharedPreferencesHelper: getData with key: $key');
+    return prefs.get(key) ?? "";
+  }
+
+  static removeData(String key) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    debugPrint('SharedPreferencesHelper: removeData with key: $key');
+    prefs.remove(key);
+  }
+
+  static Future<void> cacheUserModel(UserModel user) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('userModel', jsonEncode(user.toJson()));
+  }
+
+  static Future<UserModel?> getCachedUserModel() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userJson = prefs.getString('userModel');
+    if (userJson != null) {
+      return UserModel.fromJson(jsonDecode(userJson));
+    }
+    return null;
+  }
+  static Future<void> clear() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+  static Future<void> updateCachedUserModel(UserModel user) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userJson = prefs.getString('userModel');
+    if (userJson != null) {
+      UserModel cachedUser = UserModel.fromJson(jsonDecode(userJson));
+      cachedUser = cachedUser.copyWith(
+          email: user.email,
+          fName: user.fName,
+          lName: user.lName,
+          phone: user.phone,
+          image: user.image,
+          id: user.id,
+          codeCountry: user.codeCountry);
+
+      prefs.setString('userModel', jsonEncode(cachedUser.toJson()));
+    }
+  }
+static Future<void> saveAccessToken(String token) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  // logger('Saving access token: $token');
+  prefs.setString('accessToken', token);
+}
+
+static Future<String?> getAccessToken() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  // logger('trying to access token');
+  return prefs.getString('accessToken');
+}
+}

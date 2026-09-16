@@ -1,0 +1,76 @@
+import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:truest_flutter/core/helpers/extensions.dart';
+
+class FilePickerHelper {
+  static void showFilePicker(
+      BuildContext context, Function(File?) onFilePicked) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'chooseFileType'.tr(),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              ListTile(
+                leading: const Icon(Icons.description, color: Colors.blue),
+                title: Text('chooseExcel'.tr()),
+                onTap: () =>
+                    _pickFile(context, onFilePicked, fileType: 'excel'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.description, color: Colors.blue),
+                title: Text('chooseWord'.tr()),
+                onTap: () => _pickFile(context, onFilePicked, fileType: 'word'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf, color: Colors.blue),
+                title: Text('choosePDF'.tr()),
+                onTap: () => _pickFile(context, onFilePicked, fileType: 'pdf'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.video_library, color: Colors.blue),
+                title: Text('chooseMedia'.tr()),
+                onTap: () =>
+                    _pickFile(context, onFilePicked, fileType: 'video'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static Future<void> _pickFile(
+      BuildContext context, Function(File?) onFilePicked,
+      {required String fileType}) async {
+    FilePickerResult? result = await (fileType == 'excel'
+        ? FilePicker.platform.pickFiles(
+            type: FileType.custom, allowedExtensions: ['xlsx', 'xls'])
+        : fileType == 'word'
+            ? FilePicker.platform.pickFiles(
+                type: FileType.custom, allowedExtensions: ['docx', 'doc'])
+            : fileType == 'pdf'
+                ? FilePicker.platform.pickFiles(
+                    type: FileType.custom, allowedExtensions: ['pdf'])
+                : fileType == 'video'
+                    ? FilePicker.platform.pickFiles(type: FileType.media)
+                    : null);
+
+    if (result != null && result.files.single.path != null) {
+      onFilePicked(File(result.files.single.path!));
+      context.pop();
+    }
+  }
+}
