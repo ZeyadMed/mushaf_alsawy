@@ -7,6 +7,7 @@ import 'package:mushaf_alsawy/core/bloc/base_bloc.dart';
 import 'package:mushaf_alsawy/core/style/app_colors.dart';
 import 'package:mushaf_alsawy/core/theme/text_styles.dart';
 import 'package:mushaf_alsawy/features/quran/data/models/surah_model.dart';
+import 'package:mushaf_alsawy/features/quran/presentation/view/surah_content_screen.dart';
 import 'package:mushaf_alsawy/features/quran/presentation/view_model/cubit/quran_cubit.dart';
 
 class QuranScreen extends StatefulWidget {
@@ -55,9 +56,7 @@ class _QuranScreenState extends State<QuranScreen> {
                 padding: EdgeInsets.only(top: 20.h, bottom: 12.h),
                 child: Column(
                   children: [
-                    Text('القرآن الكريم',
-                        style:
-                            TextStyles.blackBold32),
+                    Text('القرآن الكريم', style: TextStyles.blackBold32),
                     SizedBox(height: 2.h),
                     Text('كتاب الله العزيز',
                         style:
@@ -78,11 +77,11 @@ class _QuranScreenState extends State<QuranScreen> {
                   onChanged: _onSearchChanged,
                   textDirection: TextDirection.rtl,
                   textAlign: TextAlign.right,
-                  style: TextStyles.blackBold16.copyWith(color:  AppColors.blackColor),
+                  style: TextStyles.blackBold16
+                      .copyWith(color: AppColors.blackColor),
                   decoration: InputDecoration(
                     hintText: 'إبحث عن سورة',
-                    hintStyle:
-                        TextStyles.blackBold16.copyWith(fontSize: 16.sp),
+                    hintStyle: TextStyles.blackBold16.copyWith(fontSize: 16.sp),
                     suffixIcon:
                         const Icon(Icons.search, color: Color(0xff687486)),
                     filled: true,
@@ -139,7 +138,16 @@ class _QuranScreenState extends State<QuranScreen> {
                                       color: Color(0xff0b5c32))),
                             );
                           }
-                          return _SurahTile(surah: state.items[index]);
+                          return _SurahTile(
+                            surah: state.items[index],
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => SurahContentScreen(
+                                  surah: state.items[index],
+                                ),
+                              ),
+                            ),
+                          );
                         },
                       ),
                     );
@@ -155,51 +163,57 @@ class _QuranScreenState extends State<QuranScreen> {
 }
 
 class _SurahTile extends StatelessWidget {
-  const _SurahTile({required this.surah});
+  const _SurahTile({required this.surah, required this.onTap});
 
   final SurahModel surah;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final number = surah.number.toString().padLeft(2, '0');
-    return Container(
-      height: 64.h,
-      decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xffe2e2df)))),
-      child: Row(
-        children: [
-          const Icon(Icons.chevron_left, color: Color(0xff6d7b8c), size: 20),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(surah.name.replaceFirst('سُورَةُ ', ''),
-                    style: TextStyles.blackBold16.copyWith(fontSize: 15.sp)),
-                Text(
-                    '${surah.numberOfAyahs} آيات • ${surah.isMeccan ? 'مكية' : 'مدنية'}',
-                    style: TextStyles.greyRegular15.copyWith(fontSize: 11.sp)),
-              ],
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 64.h,
+        decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Color(0xffe2e2df)))),
+        child: Row(
+          children: [
+            Container(
+              width: 34.w,
+              height: 34.w,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: surah.number == 1
+                    ? const Color(0xff0b5c32)
+                    : const Color(0xffd9fae8),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Text(number,
+                  style: TextStyles.blackBold12.copyWith(
+                      color: surah.number == 1
+                          ? Colors.white
+                          : const Color(0xff0b5c32))),
             ),
-          ),
-          SizedBox(width: 12.w),
-          Container(
-            width: 34.w,
-            height: 34.w,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: surah.number == 1
-                  ? const Color(0xff0b5c32)
-                  : const Color(0xffd9fae8),
-              borderRadius: BorderRadius.circular(8.r),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(surah.name.replaceFirst('سُورَةُ ', ''),
+                      style: TextStyles.blackBold16.copyWith(
+                          fontFamily: 'UthmanicHafs', fontSize: 20.sp)),
+                  Text(
+                      '${surah.numberOfAyahs} آيات • ${surah.isMeccan ? 'مكية' : 'مدنية'}',
+                      style: TextStyles.greyRegular15.copyWith(
+                          fontFamily: 'UthmanicHafs', fontSize: 15.sp)),
+                ],
+              ),
             ),
-            child: Text(number,
-                style: TextStyles.blackBold12.copyWith(
-                    color: surah.number == 1
-                        ? Colors.white
-                        : const Color(0xff0b5c32))),
-          ),
-        ],
+            const Icon(Icons.chevron_right, color: Color(0xff6d7b8c), size: 20),
+          ],
+        ),
       ),
     );
   }

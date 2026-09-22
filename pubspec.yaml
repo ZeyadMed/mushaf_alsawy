@@ -68,11 +68,21 @@ flutter:
   uses-material-design: true
 
   fonts:
-    - family: IBM Plex Sans Arabic
+    - family: UthmanicHafs
       fonts:
         - asset: assets/fonts/uthmanic-hafs-v22.ttf
-          weight: 500  
-
+    - family: IBM Plex Sans Arabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/IBMPlexSansArabic-Light.ttf
+          weight: 300
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
   assets:
     - assets/
     - assets/icons/

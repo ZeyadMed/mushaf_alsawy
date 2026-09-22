@@ -30,7 +30,8 @@ class SharedServiceLocator {
               //     ? 'ar'
               //     : 'en',
 
-              'Authorization': 'Bearer $token',
+              if (token != null && token.isNotEmpty)
+                'Authorization': 'Bearer $token',
             },
           ),
         )..interceptors.addAll(
