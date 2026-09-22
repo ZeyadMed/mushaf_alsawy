@@ -88,7 +88,8 @@ class _HadithListScreenState extends State<HadithListScreen> {
                       borderSide: const BorderSide(color: Color(0xffe2e2df))),
                   focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(9.r),
-                      borderSide: const BorderSide(color: Color(0xff0b5c32))),
+                      borderSide:
+                          const BorderSide(color: AppColors.primaryColor)),
                 ),
               ),
             ),
@@ -98,7 +99,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                   if (state.isLoading && state.items.isEmpty) {
                     return const Center(
                         child: CircularProgressIndicator(
-                            color: Color(0xff0b5c32)));
+                            color: AppColors.primaryColor));
                   }
                   if (state.isFailure && state.items.isEmpty) {
                     return _ListError(
@@ -127,7 +128,7 @@ class _HadithListScreenState extends State<HadithListScreen> {
                               padding: EdgeInsets.all(16),
                               child: Center(
                                   child: CircularProgressIndicator(
-                                      color: Color(0xff0b5c32))));
+                                      color: AppColors.primaryColor)));
                         }
                         final hadith = state.items[index];
                         return _HadithCard(
@@ -184,17 +185,17 @@ class _HadithCard extends StatelessWidget {
                     const Spacer(),
                     if (hadith.hasAudio)
                       const Icon(Icons.volume_up,
-                          size: 16, color: Color(0xff0b5c32)),
+                          size: 16, color: AppColors.primaryColor),
                     if (hadith.hasAudio) SizedBox(width: 6.w),
                     Container(
                       padding:
                           EdgeInsets.symmetric(horizontal: 9.w, vertical: 3.h),
                       decoration: BoxDecoration(
-                          color: const Color(0xffd9fae8),
+                          color: AppColors.highlightColor,
                           borderRadius: BorderRadius.circular(12.r)),
                       child: Text(hadith.grade ?? 'صحيح',
                           style: TextStyles.greyRegular15.copyWith(
-                              color: const Color(0xff0b5c32), fontSize: 10.sp)),
+                              color: AppColors.primaryColor, fontSize: 10.sp)),
                     ),
                   ],
                 ),

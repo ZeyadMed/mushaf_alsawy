@@ -139,14 +139,14 @@ class _BottomNavAppState extends State<BottomNavApp> {
                                   : null,
                             ),
                             alignment: Alignment.center,
-                            child: Icon(
+                            child: Image.asset(
                               index == 0
-                                  ? Icons.menu_book_outlined
-                                  : Icons.menu_book,
-                              size: isSelected ? 26.w : 23.w,
-                              color: isSelected
-                                  ? Colors.white
-                                  : AppColors.greyColor,
+                                  ? 'assets/images/quran.png'
+                                  : 'assets/images/hadith.png',
+                              width: isSelected ? 32.w : 28.w,
+                              height: isSelected ? 32.w : 28.w,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
                             ),
                           ),
                         ),

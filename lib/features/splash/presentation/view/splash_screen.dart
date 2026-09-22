@@ -126,10 +126,9 @@ class _SplashScreenState extends State<SplashScreen>
                     );
                   },
                   child: Image.asset(
-                    Assets.assetsImagesFullLogo,
+                    Assets.assetsImagesLogo,
                     width: 300,
                     height: 300,
-                    color: AppColors.blackColor.withOpacity(0.8),
                   ),
                 ),
               ),

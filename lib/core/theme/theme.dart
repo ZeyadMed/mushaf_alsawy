@@ -3,22 +3,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mushaf_alsawy/core/style/app_colors.dart';
 import 'package:mushaf_alsawy/core/style/app_text_theme.dart';
 import 'package:mushaf_alsawy/core/theme/text_styles.dart';
-import '../extensions/color_extension.dart';
 
 mixin AppThemeData on ThemeData {
   static ThemeData light(BuildContext context) => ThemeData(
       brightness: Brightness.light,
-      primaryColor: const Color.fromRGBO(81, 82, 221, 1),
+      primaryColor: AppColors.primaryColor,
       colorScheme: ColorScheme.light(
-        primary: const Color.fromRGBO(81, 82, 221, 1),
-        secondary: HexColor.fromHex('#083740'),
+        primary: AppColors.primaryColor,
+        secondary: AppColors.accentColor,
         surface: Colors.white,
         error: Colors.red,
-        onPrimary: const Color.fromRGBO(27, 22, 94, 1),
-        onSecondary: AppColors.darkGreenColor,
+        onPrimary: Colors.white,
+        onSecondary: AppColors.primaryColor,
         onSurface: Colors.black,
         onError: Colors.white,
-        outlineVariant: Colors.blueAccent,
+        outlineVariant: AppColors.primaryDarkColor,
         onInverseSurface: Colors.grey[200],
       ),
       scaffoldBackgroundColor: AppColors.backgroundColor,
@@ -28,9 +27,9 @@ mixin AppThemeData on ThemeData {
           surfaceTintColor: Colors.white,
           elevation: 0),
       textSelectionTheme: const TextSelectionThemeData(
-        cursorColor: Colors.teal,
-        selectionColor: Colors.teal,
-        selectionHandleColor: Colors.teal,
+        cursorColor: AppColors.accentColor,
+        selectionColor: AppColors.accentColor,
+        selectionHandleColor: AppColors.accentColor,
       ),
       fontFamily: 'IBM Plex Sans Arabic',
       textTheme: TextTheme(

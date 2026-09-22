@@ -75,7 +75,7 @@ class _SurahContentScreenState extends State<SurahContentScreen> {
           builder: (context, state) {
             if (state.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xff0b5c32)),
+                child: CircularProgressIndicator(color: AppColors.primaryColor),
               );
             }
             if (state.isFailure) {
@@ -174,7 +174,7 @@ class _QuranPage extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'UthmanicHafs',
                       fontSize: 23.sp,
-                      color: const Color(0xff0b5c32),
+                      color: AppColors.primaryColor,
                     ),
                   ),
                 ),
@@ -218,14 +218,14 @@ class _AyahLine extends StatelessWidget {
                   height: 22.w,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
-                    color: Color(0xffd9fae8),
+                    color: AppColors.highlightColor,
                     shape: BoxShape.circle,
                   ),
                   child: Text(
                     '${ayah.number}',
                     style: TextStyle(
                       fontFamily: 'UthmanicHafs',
-                      color: const Color(0xff0b5c32),
+                      color: AppColors.primaryColor,
                       fontSize: 11.sp,
                     ),
                   ),

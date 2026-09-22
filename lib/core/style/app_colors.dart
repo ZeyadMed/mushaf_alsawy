@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppColors {
-  static const Color primaryColor = Color(0xff9a7e57);
-  static const Color primaryDarkColor = Color(0xff7d6644);
-  static const Color secondaryColor = Color(0xffad9472);
-  static const Color highlightColor = Color(0xffeddbca);
-  static const Color brandBgColor = Color(0xfff7f2ea);
-  static const Color fontDarkColor = Color(0xff2c1a0d);
-  static const Color textFieldBGColor = Color(0xffeddbca);
-  static const Color backgroundColor = Color(0xfffaf9f6);
-  static const Color accentColor = Color(0xffB89669);
-  static const Color darkTextColor = Color(0xff2C2C2C);
+  static const Color primaryColor = Color(0xff0f3e2c);
+  static const Color primaryDarkColor = Color(0xff186447);
+  static const Color secondaryColor = Color(0xff176346);
+  static const Color highlightColor = Color(0xffd8f3e7);
+  static const Color brandBgColor = Color(0xfff3f8f5);
+  static const Color fontDarkColor = Color(0xff10251c);
+  static const Color textFieldBGColor = Color(0xffeef7f2);
+  static const Color backgroundColor = Color(0xfffafcfb);
+  static const Color accentColor = Color(0xff2ab07d);
+  static const Color darkTextColor = Color(0xff17231e);
   static const Color lightTextColor = Color(0xff8D8D8D);
   static const Color blackColor = Color(0xff000000);
   static const Color semiBlackColor = Color(0xff242426);
@@ -27,9 +27,9 @@ abstract final class AppColors {
   static const Color lightGreyColor = Color(0xffE8EFF1);
   static const Color redColor = Color(0xffB60000);
   static const Color redColor2 = Color(0xffE11F1F);
-  static const Color greenColor = Color(0xff16B364);
-  static const Color lightGreenColor = Color(0xff008000);
-  static const Color darkGreenColor = Color(0xff167F71);
+  static const Color greenColor = Color(0xff2ab07d);
+  static const Color lightGreenColor = Color(0xff2ab07d);
+  static const Color darkGreenColor = Color(0xff176346);
   static const Color lightBlueColor = Color(0xff009DDA);
   static const Color lightBlueColor2 = Color(0xff027DCF);
   static const Color mixedCyanColor = Color(0xff007DD1);
@@ -38,7 +38,7 @@ abstract final class AppColors {
   static final Color? theMixedColors =
       Color.lerp(mixedCyanColor, mixedLightBlueColor, 0.5);
   static const Color hintTextColor = Color(0xff91958E);
-  static const Color borderColor = Color(0xffE8EBE6);
+  static const Color borderColor = Color(0xffdbe9e1);
   static const Color orangeColor = Color(0xffFF6B00);
   static const Color lightOrangeColor = Color(0xffFFC107);
   static const Color filledColor = Color(0xFFF5F9FF);

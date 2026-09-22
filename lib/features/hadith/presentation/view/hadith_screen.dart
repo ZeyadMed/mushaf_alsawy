@@ -128,14 +128,14 @@ class _MatnCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                   Container(
+                Container(
                   width: 38.w,
                   height: 38.w,
                   decoration: BoxDecoration(
-                      color: const Color(0xffd9fae8),
+                      color: AppColors.highlightColor,
                       borderRadius: BorderRadius.circular(9.r)),
                   child: const Icon(Icons.article_outlined,
-                      color: Color(0xff0b5c32)),
+                      color: AppColors.primaryColor),
                 ),
                 SizedBox(width: 10.w),
                 Expanded(
@@ -154,14 +154,12 @@ class _MatnCard extends StatelessWidget {
                               .copyWith(fontSize: 11.sp)),
                       Text('${matn.hadithsCount} حديث',
                           style: TextStyles.greyRegular15.copyWith(
-                              color: const Color(0xff0b5c32), fontSize: 10.sp)),
+                              color: AppColors.primaryColor, fontSize: 10.sp)),
                     ],
                   ),
                 ),
                 SizedBox(width: 12.w),
-             
                 const Icon(Icons.chevron_right, color: Color(0xff6d7b8c)),
-
               ],
             ),
           ),
@@ -175,8 +173,8 @@ class _HadithLoading extends StatelessWidget {
   const _HadithLoading();
 
   @override
-  Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator(color: Color(0xff0b5c32)));
+  Widget build(BuildContext context) => const Center(
+      child: CircularProgressIndicator(color: AppColors.primaryColor));
 }
 
 class _HadithError extends StatelessWidget {

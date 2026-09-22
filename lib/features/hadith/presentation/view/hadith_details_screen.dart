@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -56,7 +59,8 @@ class _HadithDetailsScreenState extends State<HadithDetailsScreen> {
           builder: (context, state) {
             if (state.isLoading) {
               return const Center(
-                  child: CircularProgressIndicator(color: Color(0xff0b5c32)));
+                  child:
+                      CircularProgressIndicator(color: AppColors.primaryColor));
             }
             if (state.isFailure) {
               return Center(
@@ -81,13 +85,95 @@ class _HadithDetailsScreenState extends State<HadithDetailsScreen> {
   }
 }
 
-class _HadithDetailsContent extends StatelessWidget {
+class _HadithDetailsContent extends StatefulWidget {
   const _HadithDetailsContent({required this.hadith});
 
   final HadithModel hadith;
 
   @override
+  State<_HadithDetailsContent> createState() => _HadithDetailsContentState();
+}
+
+class _HadithDetailsContentState extends State<_HadithDetailsContent> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  StreamSubscription<PlayerState>? _playerStateSubscription;
+  StreamSubscription<Duration>? _durationSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+  bool _isLoadingAudio = false;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _playerStateSubscription =
+        _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (!mounted) return;
+      setState(() {
+        _isPlaying = state == PlayerState.playing;
+        _isLoadingAudio = false;
+      });
+    });
+    _durationSubscription = _audioPlayer.onDurationChanged.listen((duration) {
+      if (mounted) setState(() => _duration = duration);
+    });
+    _positionSubscription = _audioPlayer.onPositionChanged.listen((position) {
+      if (mounted) setState(() => _position = position);
+    });
+  }
+
+  @override
+  void dispose() {
+    _playerStateSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  String? get _audioUrl {
+    final value = widget.hadith.audioUrl?.trim();
+    if (value == null || value.isEmpty) return null;
+    return value.replaceAll('`', '');
+  }
+
+  Future<void> _toggleAudio() async {
+    final url = _audioUrl;
+    if (url == null) return;
+
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+      return;
+    }
+
+    setState(() => _isLoadingAudio = true);
+    try {
+      await _audioPlayer.play(UrlSource(url));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingAudio = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تشغيل الحديث')),
+      );
+    }
+  }
+
+  Future<void> _seekAudio(double value) async {
+    final position = Duration(milliseconds: value.round());
+    await _audioPlayer.seek(position);
+    if (mounted) setState(() => _position = position);
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final hadith = widget.hadith;
     final text = hadith.text.replaceAll(RegExp(r'<br\s*/?>'), '\n');
     return ListView(
       padding: EdgeInsets.fromLTRB(12.w, 3.h, 12.w, 20.h),
@@ -95,7 +181,7 @@ class _HadithDetailsContent extends StatelessWidget {
         Text(hadith.matnName,
             textAlign: TextAlign.center,
             style: TextStyles.greyRegular15
-                .copyWith(color: const Color(0xff0b5c32), fontSize: 13.sp)),
+                .copyWith(color: AppColors.primaryColor, fontSize: 13.sp)),
         Padding(
             padding: EdgeInsets.symmetric(vertical: 7.h),
             child: Text('۞',
@@ -112,7 +198,8 @@ class _HadithDetailsContent extends StatelessWidget {
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
               style: TextStyle(
-                  fontFamily: 'UthmanicHafs',
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontWeight: FontWeight.w400,
                   fontSize: 22.sp,
                   height: 1.8,
                   color: const Color(0xff1c2730))),
@@ -121,9 +208,10 @@ class _HadithDetailsContent extends StatelessWidget {
         Container(
           padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
           decoration: BoxDecoration(
-              color: const Color(0xffd9fae8),
+              color: AppColors.highlightColor,
               borderRadius: BorderRadius.circular(9.r)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('المصدر',
                 style: TextStyles.greyRegular15
                     .copyWith(fontSize: 10.sp, color: const Color(0xff7b8792))),
@@ -131,24 +219,97 @@ class _HadithDetailsContent extends StatelessWidget {
             Text(hadith.matnName,
                 textAlign: TextAlign.right,
                 style: TextStyles.blackBold16
-                    .copyWith(fontSize: 12.sp, color: const Color(0xff0b5c32))),
+                    .copyWith(fontSize: 12.sp, color: AppColors.primaryColor)),
           ]),
         ),
-        if (hadith.hasAudio && hadith.audioUrl != null) ...[
+        if (hadith.hasAudio && _audioUrl != null) ...[
           SizedBox(height: 16.h),
           Container(
-              height: 66.h,
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                  color: const Color(0xfff0f5f1),
-                  borderRadius: BorderRadius.circular(11.r)),
-              child: Row(children: [
-                const Icon(Icons.play_circle_fill,
-                    color: Color(0xff0b5c32), size: 38),
-                SizedBox(width: 10.w),
-                Text('الاستماع إلى الحديث',
-                    style: TextStyles.blackBold16.copyWith(fontSize: 13.sp)),
-              ])),
+            padding: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 5.h),
+            decoration: BoxDecoration(
+                color: AppColors.brandBgColor,
+                borderRadius: BorderRadius.circular(11.r)),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Row(
+                children: [
+                  if (_isLoadingAudio)
+                    const SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: CircularProgressIndicator(
+                          color: AppColors.primaryColor, strokeWidth: 3),
+                    )
+                  else
+                    IconButton(
+                      onPressed: _toggleAudio,
+                      icon: Icon(
+                        _isPlaying
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_fill,
+                        color: AppColors.primaryColor,
+                        size: 38,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 38, minHeight: 38),
+                    ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(_formatDuration(_position),
+                                style: TextStyles.greyRegular15
+                                    .copyWith(fontSize: 11.sp)),
+                            Text(_isPlaying ? 'الاستماع إلى الحديث' : 'الحديث',
+                                textDirection: TextDirection.rtl,
+                                style: TextStyles.blackBold16
+                                    .copyWith(fontSize: 12.sp)),
+                            Text(_formatDuration(_duration),
+                                style: TextStyles.greyRegular15
+                                    .copyWith(fontSize: 11.sp)),
+                          ],
+                        ),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3,
+                            thumbShape: const RoundSliderThumbShape(
+                                enabledThumbRadius: 6),
+                            overlayShape: const RoundSliderOverlayShape(
+                                overlayRadius: 12),
+                            activeTrackColor: AppColors.primaryColor,
+                            inactiveTrackColor: const Color(0xffc9d1cc),
+                            thumbColor: AppColors.primaryColor,
+                          ),
+                          child: Slider(
+                            value: _duration.inMilliseconds == 0
+                                ? 0
+                                : _position.inMilliseconds
+                                    .clamp(0, _duration.inMilliseconds)
+                                    .toDouble(),
+                            min: 0,
+                            max: _duration.inMilliseconds == 0
+                                ? 1
+                                : _duration.inMilliseconds.toDouble(),
+                            onChanged: _duration.inMilliseconds == 0
+                                ? null
+                                : (value) => setState(() => _position =
+                                    Duration(milliseconds: value.round())),
+                            onChangeEnd: _duration.inMilliseconds == 0
+                                ? null
+                                : _seekAudio,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ],
     );

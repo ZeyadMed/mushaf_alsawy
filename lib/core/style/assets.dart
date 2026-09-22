@@ -22,6 +22,10 @@ class Assets {
   /// assets/fonts/IBMPlexSansArabic-Thin.ttf
   static const String assetsFontsIBMPlexSansArabicThin = "assets/fonts/IBMPlexSansArabic-Thin.ttf";
 
+  /// Assets for assetsFontsUthmanicHafsV22
+  /// assets/fonts/uthmanic-hafs-v22.ttf
+  static const String assetsFontsUthmanicHafsV22 = "assets/fonts/uthmanic-hafs-v22.ttf";
+
   /// Assets for assetsIconsApple
   /// assets/icons/apple.svg
   static const String assetsIconsApple = "assets/icons/apple.svg";
@@ -50,9 +54,9 @@ class Assets {
   /// assets/images/faliure_widget.png
   static const String assetsImagesFaliureWidget = "assets/images/faliure_widget.png";
 
-  /// Assets for assetsImagesFullLogo
-  /// assets/images/full_logo.png
-  static const String assetsImagesFullLogo = "assets/images/full_logo.png";
+  /// Assets for assetsImagesHadith
+  /// assets/images/hadith.png
+  static const String assetsImagesHadith = "assets/images/hadith.png";
 
   /// Assets for assetsImagesLogo
   /// assets/images/logo.png
@@ -69,6 +73,10 @@ class Assets {
   /// Assets for assetsImagesOnboarding3
   /// assets/images/onboarding3.jpg
   static const String assetsImagesOnboarding3 = "assets/images/onboarding3.jpg";
+
+  /// Assets for assetsImagesQuran
+  /// assets/images/quran.png
+  static const String assetsImagesQuran = "assets/images/quran.png";
 
   /// Assets for assetsTranslationsAr
   /// assets/translations/ar.json

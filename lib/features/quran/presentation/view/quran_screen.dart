@@ -94,7 +94,8 @@ class _QuranScreenState extends State<QuranScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(9.r),
-                      borderSide: const BorderSide(color: Color(0xff0b5c32)),
+                      borderSide:
+                          const BorderSide(color: AppColors.primaryColor),
                     ),
                   ),
                 ),
@@ -106,7 +107,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     if (state.isLoading && state.items.isEmpty) {
                       return const Center(
                           child: CircularProgressIndicator(
-                              color: Color(0xff0b5c32)));
+                              color: AppColors.primaryColor));
                     }
                     if (state.isFailure && state.items.isEmpty) {
                       return _ErrorView(
@@ -135,7 +136,7 @@ class _QuranScreenState extends State<QuranScreen> {
                               padding: EdgeInsets.all(16),
                               child: Center(
                                   child: CircularProgressIndicator(
-                                      color: Color(0xff0b5c32))),
+                                      color: AppColors.primaryColor)),
                             );
                           }
                           return _SurahTile(
@@ -185,15 +186,15 @@ class _SurahTile extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: surah.number == 1
-                    ? const Color(0xff0b5c32)
-                    : const Color(0xffd9fae8),
+                    ? AppColors.primaryColor
+                    : AppColors.highlightColor,
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: Text(number,
                   style: TextStyles.blackBold12.copyWith(
                       color: surah.number == 1
                           ? Colors.white
-                          : const Color(0xff0b5c32))),
+                          : AppColors.primaryColor)),
             ),
             SizedBox(width: 12.w),
             Expanded(
