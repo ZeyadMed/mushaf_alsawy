@@ -6,6 +6,7 @@ import 'package:mushaf_alsawy/core/http/endpoints.dart';
 import 'package:mushaf_alsawy/core/http/failure.dart';
 import 'package:mushaf_alsawy/core/service_locator/service_locator.dart';
 import 'package:mushaf_alsawy/features/quran/data/models/ayah_model.dart';
+import 'package:mushaf_alsawy/features/quran/data/models/surah_content_response.dart';
 
 class SurahContentCubit extends Cubit<BaseState<AyahModel>> {
   SurahContentCubit({GenericDataSource? dataSource})
@@ -13,6 +14,7 @@ class SurahContentCubit extends Cubit<BaseState<AyahModel>> {
         super(const BaseState<AyahModel>());
 
   final GenericDataSource _dataSource;
+  String? audioUrl;
 
   Future<void> loadContent(
       {required int surahNumber, required int pageSize}) async {
@@ -21,18 +23,19 @@ class SurahContentCubit extends Cubit<BaseState<AyahModel>> {
     final items = <AyahModel>[];
     var pageIndex = 1;
     const requestPageSize = 10;
-    Either<Failure, List<AyahModel>> result =
-        const Right<Failure, List<AyahModel>>([]);
+    Either<Failure, SurahContentResponse> result =
+        const Right<Failure, SurahContentResponse>(
+            SurahContentResponse(ayahs: []));
 
     do {
-      result = await _dataSource.fetchData<AyahModel>(
+      result = await _dataSource.fetchResult<SurahContentResponse>(
         endpoint: Endpoints.surahContent(surahNumber),
         queryParameters: {
           'number': surahNumber,
           'pageIndex': pageIndex,
           'pageSize': requestPageSize,
         },
-        fromJson: AyahModel.fromJson,
+        fromJson: SurahContentResponse.fromJson,
       );
 
       final pageResult = result;
@@ -40,10 +43,12 @@ class SurahContentCubit extends Cubit<BaseState<AyahModel>> {
         break;
       }
 
-      final pageItems = pageResult.fold(
-        (_) => <AyahModel>[],
+      final response = pageResult.fold(
+        (_) => const SurahContentResponse(ayahs: []),
         (page) => page,
       );
+      audioUrl ??= response.audioUrl?.trim();
+      final pageItems = response.ayahs;
       items.addAll(pageItems);
       pageIndex++;
 

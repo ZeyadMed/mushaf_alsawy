@@ -52,7 +52,16 @@ flutter:
   fonts:
     - family: UthmanicHafs
       fonts:
-        - asset: assets/fonts/uthmanic-hafs-v22.ttf
+        - asset: assets/fonts/UthmanicHafs1Ver18.ttf
+    - family: QCF2001
+      fonts:
+        - asset: assets/fonts/QCF2001.ttf
+    - family: QCF4Hafs
+      fonts:
+        - asset: assets/fonts/QCF4_Hafs_01_W.ttf
+    - family: QCFBismillah
+      fonts:
+        - asset: assets/fonts/QCF_BSML.ttf
     - family: IBM Plex Sans Arabic
       fonts:
         - asset: assets/fonts/IBMPlexSansArabic-Thin.ttf
