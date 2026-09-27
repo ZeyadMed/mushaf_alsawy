@@ -80,6 +80,7 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/translations/
+    - assets/quran/
 
 flutter_assets:
   assets_path: assets/

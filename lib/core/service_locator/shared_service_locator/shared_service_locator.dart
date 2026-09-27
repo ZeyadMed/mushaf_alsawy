@@ -6,6 +6,8 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:mushaf_alsawy/core/cache_manager/cache_manager.dart';
 import 'package:mushaf_alsawy/core/http/api_consumer.dart';
 import 'package:mushaf_alsawy/core/http/endpoints.dart';
+import 'package:mushaf_alsawy/features/quran/data/mushaf_layout_repository.dart';
+import 'package:mushaf_alsawy/features/quran/data/qcf_font_manager.dart';
 
 class SharedServiceLocator {
   static Future<void> execute({required GetIt getIt}) async {
@@ -57,6 +59,9 @@ class SharedServiceLocator {
     );
     getIt.registerLazySingleton<ApiConsumer>(
         () => BaseApiConsumer(dio: getIt<Dio>()));
+    getIt.registerLazySingleton<MushafLayoutRepository>(
+        () => MushafLayoutRepository());
+    getIt.registerLazySingleton<QcfFontManager>(() => QcfFontManager());
 
     // getIt.registerLazySingleton<PusherConsumer>(() => PusherConsumerImpl(appKey: "69d83bf354bcf8c0a712",cluster:"mt1" ));
     // getIt.registerLazySingleton<LocalNotificationConsumer>(() => LocalNotificationServiceImpl()..initialize());

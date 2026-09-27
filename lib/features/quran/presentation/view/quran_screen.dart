@@ -7,7 +7,7 @@ import 'package:mushaf_alsawy/core/bloc/base_bloc.dart';
 import 'package:mushaf_alsawy/core/style/app_colors.dart';
 import 'package:mushaf_alsawy/core/theme/text_styles.dart';
 import 'package:mushaf_alsawy/features/quran/data/models/surah_model.dart';
-import 'package:mushaf_alsawy/features/quran/presentation/view/surah_content_screen.dart';
+import 'package:mushaf_alsawy/features/quran/presentation/view/mushaf/mushaf_screen.dart';
 import 'package:mushaf_alsawy/features/quran/presentation/view_model/cubit/quran_cubit.dart';
 
 class QuranScreen extends StatefulWidget {
@@ -143,8 +143,8 @@ class _QuranScreenState extends State<QuranScreen> {
                             surah: state.items[index],
                             onTap: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) => SurahContentScreen(
-                                  surah: state.items[index],
+                                builder: (_) => MushafScreen(
+                                  initialSurah: state.items[index].number,
                                 ),
                               ),
                             ),
