@@ -196,15 +196,18 @@ class _MushafScreenState extends State<MushafScreen> {
           return Column(
             children: [
               Expanded(
-                child: PageView.builder(
-                  controller: controller,
-                  reverse: true,
-                  itemCount: MushafLayoutRepository.totalPages,
-                  onPageChanged: _onPageChanged,
-                  itemBuilder: (context, index) => MushafPageWidget(
-                    page: _repo.page(index + 1),
-                    selectedAyah: _selectedAyah,
-                    onAyahTap: _onAyahTap,
+                // RTL like a paper Mushaf: the next page comes in from the left.
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: PageView.builder(
+                    controller: controller,
+                    itemCount: MushafLayoutRepository.totalPages,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, index) => MushafPageWidget(
+                      page: _repo.page(index + 1),
+                      selectedAyah: _selectedAyah,
+                      onAyahTap: _onAyahTap,
+                    ),
                   ),
                 ),
               ),
