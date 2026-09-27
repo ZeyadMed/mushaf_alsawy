@@ -200,7 +200,7 @@ class _HadithDetailsContentState extends State<_HadithDetailsContent> {
               style: TextStyle(
                   fontFamily: 'IBM Plex Sans Arabic',
                   fontWeight: FontWeight.w400,
-                  fontSize: 22.sp,
+                  fontSize: 20.sp,
                   height: 1.8,
                   color: const Color(0xff1c2730))),
         ),

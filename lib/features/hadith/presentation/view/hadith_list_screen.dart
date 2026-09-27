@@ -206,7 +206,7 @@ class _HadithCard extends StatelessWidget {
                     textAlign: TextAlign.right,
                     textDirection: TextDirection.rtl,
                     style: TextStyle(
-                        fontFamily: 'UthmanicHafs',
+                        fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 17.sp,
                         height: 1.55,
                         color: const Color(0xff25313b))),
