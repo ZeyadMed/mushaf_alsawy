@@ -166,94 +166,96 @@ class _MushafScreenState extends State<MushafScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _paperColor,
-      appBar: AppBar(
+    return SafeArea(
+      child: Scaffold(
         backgroundColor: _paperColor,
-        surfaceTintColor: _paperColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.chevron_right, color: Color(0xff263238)),
-        ),
-        title: _repo.layout == null ? null : _buildTitle(),
-      ),
-      body: FutureBuilder<void>(
-        future: _layoutReady,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('تعذر تحميل المصحف', style: TextStyles.greyRegular15),
-            );
-          }
-          final controller = _pageController;
-          if (controller == null) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryColor),
-            );
-          }
-          return Column(
-            children: [
-              Expanded(
-                // RTL like a paper Mushaf: the next page comes in from the left.
-                child: Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: PageView.builder(
-                    controller: controller,
-                    itemCount: MushafLayoutRepository.totalPages,
-                    onPageChanged: _onPageChanged,
-                    itemBuilder: (context, index) => MushafPageWidget(
-                      page: _repo.page(index + 1),
-                      selectedAyah: _selectedAyah,
-                      onAyahTap: _onAyahTap,
+        // appBar: AppBar(
+        //   backgroundColor: _paperColor,
+        //   surfaceTintColor: _paperColor,
+        //   elevation: 0,
+        //   centerTitle: true,
+        //   leading: IconButton(
+        //     onPressed: () => Navigator.of(context).pop(),
+        //     icon: const Icon(Icons.chevron_right, color: Color(0xff263238)),
+        //   ),
+        //   title: _repo.layout == null ? null : _buildTitle(),
+        // ),
+        body: FutureBuilder<void>(
+          future: _layoutReady,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('تعذر تحميل المصحف', style: TextStyles.greyRegular15),
+              );
+            }
+            final controller = _pageController;
+            if (controller == null) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryColor),
+              );
+            }
+            return Column(
+              children: [
+                Expanded(
+                  // RTL like a paper Mushaf: the next page comes in from the left.
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: PageView.builder(
+                      controller: controller,
+                      itemCount: MushafLayoutRepository.totalPages,
+                      onPageChanged: _onPageChanged,
+                      itemBuilder: (context, index) => MushafPageWidget(
+                        page: _repo.page(index + 1),
+                        selectedAyah: _selectedAyah,
+                        onAyahTap: _onAyahTap,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(top: 6.h),
-                child: Text(
-                  'صفحة ${arabicDigits(_currentPage)} / ${arabicDigits(MushafLayoutRepository.totalPages)}',
-                  textDirection: TextDirection.rtl,
-                  style: TextStyles.greyRegular15.copyWith(fontSize: 12.sp),
+                Padding(
+                  padding: EdgeInsets.only(top: 6.h),
+                  child: Text(
+                    'صفحة ${arabicDigits(_currentPage)} / ${arabicDigits(MushafLayoutRepository.totalPages)}',
+                    textDirection: TextDirection.rtl,
+                    style: TextStyles.greyRegular15.copyWith(fontSize: 12.sp),
+                  ),
                 ),
-              ),
-              if (_audioUrl != null)
-                QuranAudioBar(
-                  title: 'سورة ${_repo.chapter(_audioSurah!).name}',
-                  isPlaying: _isPlaying,
-                  isLoading: _isLoadingAudio,
-                  position: _position,
-                  duration: _duration,
-                  onToggle: _toggleAudio,
-                  onSeek: _seekAudio,
-                ),
-              SizedBox(height: 10.h),
-            ],
-          );
-        },
+                if (_audioUrl != null)
+                  QuranAudioBar(
+                    title: 'سورة ${_repo.chapter(_audioSurah!).name}',
+                    isPlaying: _isPlaying,
+                    isLoading: _isLoadingAudio,
+                    position: _position,
+                    duration: _duration,
+                    onToggle: _toggleAudio,
+                    onSeek: _seekAudio,
+                  ),
+                SizedBox(height: 10.h),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildTitle() {
-    final chapter = _repo.chapter(_repo.page(_currentPage).firstSurah);
-    return Column(
-      children: [
-        Text(
-          chapter.name,
-          style: TextStyles.blackBold16.copyWith(
-            fontFamily: 'UthmanicHafs',
-            fontSize: 20.sp,
-          ),
-        ),
-        Text(
-          '${arabicDigits(chapter.versesCount)} آية • ${chapter.isMeccan ? 'مكية' : 'مدنية'}',
-          textDirection: TextDirection.rtl,
-          style: TextStyles.greyRegular15.copyWith(fontSize: 12.sp),
-        ),
-      ],
-    );
-  }
+  // Widget _buildTitle() {
+  //   final chapter = _repo.chapter(_repo.page(_currentPage).firstSurah);
+  //   return Column(
+  //     children: [
+  //       Text(
+  //         'سورة ${arabicDigits(chapter.number)}: ${chapter.name}',
+  //         style: TextStyles.blackBold16.copyWith(
+  //           fontFamily: 'UthmanicHafs',
+  //           fontSize: 20.sp,
+  //         ),
+  //       ),
+  //       Text(
+  //         '${arabicDigits(chapter.versesCount)} آية • ${chapter.isMeccan ? 'مكية' : 'مدنية'}',
+  //         textDirection: TextDirection.rtl,
+  //         style: TextStyles.greyRegular15.copyWith(fontSize: 12.sp),
+  //       ),
+  //     ],
+  //   );
+  // }
 }

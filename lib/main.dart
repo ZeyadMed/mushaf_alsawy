@@ -21,7 +21,6 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>(
     debugLabel: 'navigatorKey-${DateTime.now().millisecondsSinceEpoch}');
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -83,7 +82,7 @@ class MyApp extends StatelessWidget {
                 final bool offline = state is InternetOffState;
 
                 return MaterialApp.router(
-                  title: 'Zawaya',
+                  title: 'مصحف الصاوي - الوحيين',
                   scaffoldMessengerKey: scaffoldMessengerKey,
                   debugShowCheckedModeBanner: false,
                   localizationsDelegates: context.localizationDelegates,
@@ -136,4 +135,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
