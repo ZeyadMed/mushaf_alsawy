@@ -50,10 +50,11 @@ class _BottomNavAppState extends State<BottomNavApp> {
   }
 
   Future<bool> _onWillPop() async {
-    if (_selectedIndex != 2) {
+    if (_selectedIndex != 0) {
       setState(() {
         _selectedIndex = 0;
       });
+      _lastBackPressed = null;
       return false;
     } else {
       final now = DateTime.now();
