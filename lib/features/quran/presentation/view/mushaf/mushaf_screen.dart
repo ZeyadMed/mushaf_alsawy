@@ -17,7 +17,7 @@ import 'package:mushaf_alsawy/features/quran/presentation/view/mushaf/mushaf_pag
 import 'package:mushaf_alsawy/features/quran/presentation/view/mushaf/quran_audio_bar.dart';
 import 'package:mushaf_alsawy/features/quran/presentation/view/mushaf/tafsir_dialog.dart';
 
-const Color _paperColor = Color(0xfffbf8ee);
+const Color _paperColor = Color.fromARGB(255, 250, 249, 247);
 
 /// The whole Madina Mushaf (604 pages), opened at [initialSurah]'s first page.
 class MushafScreen extends StatefulWidget {

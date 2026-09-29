@@ -15,12 +15,15 @@ const Color mushafFrameColor = Color(0xff6b7a2e);
 const Color mushafAyahMarkerColor = Color(0xff6b7a2e);
 const Color _highlightColor = Color(0x336b7a2e);
 
+// QCF fonts ship one weight; w600+ makes the engine synthesize a bolder stroke.
+const FontWeight mushafTextWeight = FontWeight.w600;
+
 // Olive-green frame colours.
 const Color _frameInk = Color(0xff3f4a1c);
 const Color _frameAccent = Color(0xff6b7a2e);
 const Color _frameTint = Color(0xffdde3c0);
 const Color _frameLight = Color(0xfff7f8ec);
-const Color _cream = Color(0xfffdfaf0);
+const Color _cream = Color.fromARGB(255, 255, 255, 255);
 
 /// QPC v4 glyphs keep their natural width (the print justifies with spacing),
 /// so each page is sized to its widest justified line, within these bounds;
@@ -276,6 +279,7 @@ class _MushafPageWidgetState extends State<MushafPageWidget> {
 TextStyle _glyphStyle(String family, double fontSize) => TextStyle(
       fontFamily: family,
       fontSize: fontSize,
+      fontWeight: mushafTextWeight,
       height: 1,
       color: mushafInkColor,
     );
