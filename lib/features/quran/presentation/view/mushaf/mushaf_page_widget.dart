@@ -11,15 +11,15 @@ import 'package:mushaf_alsawy/features/quran/data/mushaf_layout_repository.dart'
 import 'package:mushaf_alsawy/features/quran/data/qcf_font_manager.dart';
 
 const Color mushafInkColor = Color(0xff1b1b1b);
-const Color mushafFrameColor = Color(0xff8a6d3b);
-const Color mushafAyahMarkerColor = Color(0xffb8413f);
-const Color _highlightColor = Color(0x33c9a24a);
+const Color mushafFrameColor = Color(0xff6b7a2e);
+const Color mushafAyahMarkerColor = Color(0xff6b7a2e);
+const Color _highlightColor = Color(0x336b7a2e);
 
-// Madina Mushaf print colours.
-const Color _frameInk = Color(0xff3d4f5c);
-const Color _frameRed = Color(0xffc4585a);
-const Color _framePink = Color(0xfff4cdc6);
-const Color _frameLight = Color(0xfffdf6f2);
+// Olive-green frame colours.
+const Color _frameInk = Color(0xff3f4a1c);
+const Color _frameAccent = Color(0xff6b7a2e);
+const Color _frameTint = Color(0xffdde3c0);
+const Color _frameLight = Color(0xfff7f8ec);
 const Color _cream = Color(0xfffdfaf0);
 
 /// QPC v4 glyphs keep their natural width (the print justifies with spacing),
@@ -537,7 +537,7 @@ class _TopLabelBox extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
         decoration: BoxDecoration(
-          border: Border.all(color: _frameRed, width: 0.8),
+          border: Border.all(color: _frameAccent, width: 0.8),
         ),
         child: Text(
           text,
@@ -610,11 +610,11 @@ void _drawRosette(Canvas canvas, Offset c, double r, {int petals = 8}) {
     final a = i * 2 * math.pi / petals;
     final p = c + Offset(math.cos(a), math.sin(a)) * r * 0.62;
     canvas
-      ..drawCircle(p, r * 0.34, _fill(_framePink))
-      ..drawCircle(p, r * 0.34, _stroke(_frameRed, r * 0.08));
+      ..drawCircle(p, r * 0.34, _fill(_frameTint))
+      ..drawCircle(p, r * 0.34, _stroke(_frameAccent, r * 0.08));
   }
   canvas
-    ..drawCircle(c, r * 0.36, _fill(_frameRed))
+    ..drawCircle(c, r * 0.36, _fill(_frameAccent))
     ..drawCircle(c, r * 0.36, _stroke(_frameInk, r * 0.06));
 }
 
@@ -634,10 +634,10 @@ class _MushafFramePainter extends CustomPainter {
       ..drawRect(outer, _fill(_frameLight))
       ..drawRect(inner, _fill(_cream))
       ..drawRect(outer, _stroke(_frameInk, 1.6))
-      ..drawRect(outer.deflate(2.2), _stroke(_frameRed, 0.8))
-      ..drawRect(inner.inflate(2.2), _stroke(_frameRed, 0.8))
+      ..drawRect(outer.deflate(2.2), _stroke(_frameAccent, 0.8))
+      ..drawRect(inner.inflate(2.2), _stroke(_frameAccent, 0.8))
       ..drawRect(inner, _stroke(_frameInk, 1.4))
-      ..drawRect(inner.deflate(2.6), _stroke(_frameRed, 1))
+      ..drawRect(inner.deflate(2.6), _stroke(_frameAccent, 1))
       ..drawRect(inner.deflate(4.4), _stroke(_frameInk, 0.7));
 
     final mid = b / 2;
@@ -658,7 +658,7 @@ class _MushafFramePainter extends CustomPainter {
     ]) {
       final square = Rect.fromCenter(center: corner, width: b, height: b);
       canvas
-        ..drawRect(square, _fill(_framePink))
+        ..drawRect(square, _fill(_frameTint))
         ..drawRect(square.deflate(1), _stroke(_frameInk, 1));
       _drawRosette(canvas, corner, b * 0.4);
     }
@@ -683,7 +683,7 @@ class _MushafFramePainter extends CustomPainter {
         ..rotate(up ? 0 : math.pi);
       final tulip = _tulipPath(b * 0.68);
       canvas
-        ..drawPath(tulip, _fill(_frameRed))
+        ..drawPath(tulip, _fill(_frameAccent))
         ..drawPath(tulip, _stroke(_frameInk, 0.7))
         ..restore();
       // Blue-grey leaves between the tulips.
@@ -712,9 +712,9 @@ class _SurahFramePainter extends CustomPainter {
     final h = size.height;
     final rect = (Offset.zero & size).deflate(0.8);
     canvas
-      ..drawRect(rect, _fill(_framePink))
+      ..drawRect(rect, _fill(_frameTint))
       ..drawRect(rect, _stroke(_frameInk, 1.5))
-      ..drawRect(rect.deflate(h * 0.07), _stroke(_frameRed, 1))
+      ..drawRect(rect.deflate(h * 0.07), _stroke(_frameAccent, 1))
       ..drawRect(rect.deflate(h * 0.11), _stroke(_frameInk, 0.6));
 
     final knot = geometry.knotWidth;
@@ -746,7 +746,7 @@ class _SurahFramePainter extends CustomPainter {
     canvas
       ..drawPath(outline, _fill(_cream))
       ..drawPath(outline, _stroke(_frameInk, 1.2))
-      ..drawPath(cartouche(h * 0.05), _stroke(_frameRed, 0.7));
+      ..drawPath(cartouche(h * 0.05), _stroke(_frameAccent, 0.7));
 
     _drawMedallion(canvas, Offset(size.width - knot - r, h / 2), r);
     _drawMedallion(canvas, Offset(knot + r, h / 2), r);
@@ -761,7 +761,7 @@ class _SurahFramePainter extends CustomPainter {
     canvas
       ..drawRRect(panel, _fill(_frameLight))
       ..drawRRect(panel, _stroke(_frameInk, 0.9));
-    final loop = _stroke(_frameRed, h * 0.045);
+    final loop = _stroke(_frameAccent, h * 0.045);
     for (final dx in [-1.0, 1.0]) {
       canvas
         ..drawOval(
@@ -791,13 +791,13 @@ class _SurahFramePainter extends CustomPainter {
       final a = i * 2 * math.pi / scallops;
       final p = c + Offset(math.cos(a), math.sin(a)) * r * 0.9;
       canvas
-        ..drawCircle(p, r * 0.2, _fill(_frameRed))
+        ..drawCircle(p, r * 0.2, _fill(_frameAccent))
         ..drawCircle(p, r * 0.2, _stroke(_frameInk, 0.5));
     }
     canvas
       ..drawCircle(c, r * 0.9, _fill(_cream))
       ..drawCircle(c, r * 0.9, _stroke(_frameInk, 1))
-      ..drawCircle(c, r * 0.8, _stroke(_frameRed, 0.6));
+      ..drawCircle(c, r * 0.8, _stroke(_frameAccent, 0.6));
   }
 
   @override
@@ -828,11 +828,11 @@ class _MedallionPainter extends CustomPainter {
       Radius.circular(h * 0.46),
     );
     canvas
-      ..drawPath(tips, _fill(_framePink))
+      ..drawPath(tips, _fill(_frameTint))
       ..drawPath(tips, _stroke(_frameInk, 1))
       ..drawRRect(body, _fill(_cream))
       ..drawRRect(body, _stroke(_frameInk, 1.3))
-      ..drawRRect(body.deflate(h * 0.08), _stroke(_frameRed, 0.8));
+      ..drawRRect(body.deflate(h * 0.08), _stroke(_frameAccent, 0.8));
   }
 
   @override
