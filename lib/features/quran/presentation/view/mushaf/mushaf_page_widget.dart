@@ -12,11 +12,21 @@ import 'package:mushaf_alsawy/features/quran/data/qcf_font_manager.dart';
 
 const Color mushafInkColor = Color(0xff1b1b1b);
 const Color mushafFrameColor = Color(0xff8a6d3b);
+const Color mushafAyahMarkerColor = Color(0xffb8413f);
 const Color _highlightColor = Color(0x33c9a24a);
 
-/// Full-width lines in the QCF V1 fonts are at most ~15.1em wide, so this
-/// ratio fills the width on every page while keeping one font size.
-const double _lineWidthInEm = 15.4;
+// Madina Mushaf print colours.
+const Color _frameInk = Color(0xff3d4f5c);
+const Color _frameRed = Color(0xffc4585a);
+const Color _framePink = Color(0xfff4cdc6);
+const Color _frameLight = Color(0xfffdf6f2);
+const Color _cream = Color(0xfffdfaf0);
+
+/// QPC v4 glyphs keep their natural width (the print justifies with spacing),
+/// so each page is sized to its widest justified line, within these bounds;
+/// a line wider than the upper bound is scaled down on its own.
+const double _minLineWidthInEm = 15.5;
+const double _maxLineWidthInEm = 19;
 const double _minLineHeightInEm = 1.45;
 const int _linesPerPage = 15;
 
@@ -56,7 +66,30 @@ String arabicJuzName(int juz) {
   return juz >= 1 && juz <= names.length ? names[juz - 1] : arabicDigits(juz);
 }
 
-/// One page of the Madina Mushaf: 15 lines in the page's own QCF font.
+/// Calligraphic "سورة …" glyph of [surah] in the `SurahNameV4` font
+/// (assets/fonts/surah-name-v4-color.ttf). The font lists surahs 22–114
+/// first, then 1–21, on these codepoints.
+String surahNameGlyph(int surah) {
+  const codes = [
+    0xfb51, 0xfb52, 0xfb54, 0xfb55, 0xfb57, 0xfb58, 0xfb5a, 0xfb5b, 0xfb5d, //
+    0xfb5e, 0xfb60, 0xfb61, 0xfb63, 0xfb64, 0xfb66, 0xfb67, 0xfb69, 0xfb6a,
+    0xfb6c, 0xfb6d, 0xfb6f, 0xfb70, 0xfb72, 0xfb73, 0xfb75, 0xfb76, 0xfb78,
+    0xfb79, 0xfb7b, 0xfb7c, 0xfb7e, 0xfb7f, 0xfb81, 0xfb82, 0xfb84, 0xfb85,
+    0xfb87, 0xfb88, 0xfb8a, 0xfb8b, 0xfb8d, 0xfb8e, 0xfb90, 0xfb91, 0xfb93,
+    0xfb94, 0xfb96, 0xfb97, 0xfb99, 0xfb9a, 0xfb9c, 0xfb9d, 0xfb9f, 0xfba0,
+    0xfba2, 0xfba3, 0xfba5, 0xfba6, 0xfba8, 0xfba9, 0xfbab, 0xfbac, 0xfbae,
+    0xfbaf, 0xfbb1, 0xfbb2, 0xfbb4, 0xfbb5, 0xfbb7, 0xfbb8, 0xfbba, 0xfbbb,
+    0xfbbd, 0xfbbe, 0xfbc0, 0xfbc1, 0xfbd3, 0xfbd4, 0xfbd6, 0xfbd7, 0xfbd9,
+    0xfbda, 0xfbdc, 0xfbdd, 0xfbdf, 0xfbe0, 0xfbe2, 0xfbe3, 0xfbe5, 0xfbe6,
+    0xfbe8, 0xfbe9, 0xfbeb, 0xfc45, 0xfc46, 0xfc47, 0xfc4a, 0xfc4b, 0xfc4e,
+    0xfc4f, 0xfc51, 0xfc52, 0xfc53, 0xfc55, 0xfc56, 0xfc58, 0xfc5a, 0xfc5b,
+    0xfc5c, 0xfc5d, 0xfc5e, 0xfc61, 0xfc62, 0xfc64,
+  ];
+  return String.fromCharCode(codes[surah >= 22 ? surah - 22 : surah + 92]);
+}
+
+/// One page of the Madina Mushaf: 15 lines of QPC v4 glyphs in the printed
+/// frame.
 class MushafPageWidget extends StatefulWidget {
   const MushafPageWidget({
     required this.page,
@@ -75,10 +108,13 @@ class MushafPageWidget extends StatefulWidget {
 
 class _MushafPageWidgetState extends State<MushafPageWidget> {
   final _fonts = getIt<QcfFontManager>();
+  final _repo = getIt<MushafLayoutRepository>();
   late Future<void> _fontsReady;
 
-  bool get _needsBismillahFont =>
-      widget.page.lines.any((line) => line is MushafBismillahLine);
+  /// Natural width (in em) of each words line, measured once fonts load.
+  Map<MushafWordsLine, double>? _lineWidths;
+
+  Set<int> get _pageFonts => _repo.fontsOf(widget.page.number);
 
   @override
   void initState() {
@@ -86,81 +122,106 @@ class _MushafPageWidgetState extends State<MushafPageWidget> {
     _fontsReady = _loadFonts();
   }
 
-  Future<void> _loadFonts() => Future.wait([
-        _fonts.ensurePageFont(widget.page.number),
-        if (_needsBismillahFont) _fonts.ensurePageFont(1),
-      ]);
+  // Bismillah lines use font 1, which is bundled.
+  Future<void> _loadFonts() => Future.wait(_pageFonts.map(_fonts.ensureFont));
 
-  bool get _fontsLoaded =>
-      _fonts.isLoaded(widget.page.number) &&
-      (!_needsBismillahFont || _fonts.isLoaded(1));
+  bool get _fontsLoaded => _pageFonts.every(_fonts.isLoaded);
 
   @override
   Widget build(BuildContext context) {
-    final repo = getIt<MushafLayoutRepository>();
     final page = widget.page;
-    final chapter = repo.chapter(page.firstSurah);
+    final chapter = _repo.chapter(page.firstSurah);
+    final band = 13.w;
     return Padding(
-      padding: EdgeInsets.zero,
-      child: CustomPaint(
-        painter: const _MushafBorderPainter(),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 5.h),
-          child: Column(
-            children: [
-              _PageHeader(
-                surahNumber: chapter.number,
-                surahName: chapter.name,
-                versesCount: chapter.versesCount,
-                juz: page.juz,
-              ),
-              SizedBox(height: 6.h),
-              Expanded(
-                child: FutureBuilder<void>(
-                  future: _fontsReady,
-                  builder: (context, snapshot) {
-                    if (_fontsLoaded) return _buildLines(repo);
-                    if (snapshot.hasError) {
-                      return _FontError(
-                        onRetry: () =>
-                            setState(() => _fontsReady = _loadFonts()),
-                      );
-                    }
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryColor,
-                      ),
-                    );
-                  },
+      padding: EdgeInsets.fromLTRB(6.w, 2.h, 6.w, 4.h),
+      child: Column(
+        children: [
+          _PageHeader(surahName: chapter.name, juz: page.juz),
+          SizedBox(height: 3.h),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(painter: _MushafFramePainter(band)),
                 ),
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                arabicDigits(page.number),
-                style: TextStyles.greyRegular15.copyWith(fontSize: 12.sp),
-              ),
-            ],
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    band + 9.w,
+                    band + 6.h,
+                    band + 9.w,
+                    band + 10.h,
+                  ),
+                  child: FutureBuilder<void>(
+                    future: _fontsReady,
+                    builder: (context, snapshot) {
+                      if (_fontsLoaded) return _buildLines();
+                      if (snapshot.hasError) {
+                        return _FontError(
+                          onRetry: () =>
+                              setState(() => _fontsReady = _loadFonts()),
+                        );
+                      }
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryColor,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: _PageNumberMedallion(
+                    number: page.number,
+                    height: band * 1.9,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildLines(MushafLayoutRepository repo) {
+  Map<MushafWordsLine, double> _measureLines() {
+    return _lineWidths ??= {
+      for (final line in widget.page.lines.whereType<MushafWordsLine>())
+        line: _naturalWidth(line, 100) / 100,
+    };
+  }
+
+  Widget _buildLines() {
     final page = widget.page;
-    final family = QcfFontManager.familyFor(page.number);
+    final widths = _measureLines();
+    bool isShort(MushafWordsLine line) {
+      if (page.isCentered) return true;
+      final last = line.words.last;
+      final endsSurah =
+          last.isEnd && last.ayah == _repo.chapter(last.surah).versesCount;
+      return endsSurah && widths[line]! < _minLineWidthInEm * 0.85;
+    }
+
+    final justified = [
+      for (final MapEntry(key: line, value: width) in widths.entries)
+        if (!isShort(line)) width,
+    ];
+    final lineWidthInEm = justified
+        .fold(_minLineWidthInEm, math.max)
+        .clamp(_minLineWidthInEm, _maxLineWidthInEm);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final lineHeight = constraints.maxHeight / _linesPerPage;
         // Width-bound on phones; on short/wide screens the text block narrows
         // so the glyphs keep their proportions.
         final fontSize = math.min(
-          constraints.maxWidth / _lineWidthInEm,
+          constraints.maxWidth / lineWidthInEm,
           lineHeight / _minLineHeightInEm,
         );
-        final width = fontSize * _lineWidthInEm;
+        final width = fontSize * lineWidthInEm;
         // Pages 1–2 have short lines; the print sets them larger.
-        final glyphSize = page.isCentered ? fontSize * 1.25 : fontSize;
+        final glyphSize = page.isCentered ? fontSize * 1.15 : fontSize;
         final lines = [
           for (final line in page.lines)
             SizedBox(
@@ -168,8 +229,7 @@ class _MushafPageWidgetState extends State<MushafPageWidget> {
               child: switch (line) {
                 MushafWordsLine() => _WordsLine(
                     line: line,
-                    page: page,
-                    family: family,
+                    centered: isShort(line),
                     fontSize: glyphSize,
                     width: width,
                     height: lineHeight,
@@ -178,20 +238,18 @@ class _MushafPageWidgetState extends State<MushafPageWidget> {
                   ),
                 MushafSurahHeaderLine(:final surah) => _SurahFrame(
                     number: surah,
-                    name: repo.chapter(surah).name,
-                    versesCount: repo.chapter(surah).versesCount,
+                    versesCount: _repo.chapter(surah).versesCount,
                     height: lineHeight,
-                    fontSize: fontSize,
                   ),
                 MushafBismillahLine() => Center(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        repo.bismillahGlyphs,
+                        _repo.bismillahGlyphs,
                         textDirection: TextDirection.rtl,
                         style: _glyphStyle(
                           QcfFontManager.familyFor(1),
-                          fontSize * 1.5,
+                          fontSize * 1.1,
                         ),
                       ),
                     ),
@@ -222,11 +280,36 @@ TextStyle _glyphStyle(String family, double fontSize) => TextStyle(
       color: mushafInkColor,
     );
 
+TextStyle _wordStyle(MushafWord word, double fontSize) =>
+    _glyphStyle(QcfFontManager.familyFor(word.font), fontSize).copyWith(
+      color: word.isEnd ? mushafAyahMarkerColor : mushafInkColor,
+    );
+
+/// A word's glyphs in reading order. PUA glyphs are bidi-LTR, so a word of
+/// several glyphs (a ۞/۩ marker or a split word) is forced right to left.
+String _wordText(MushafWord word) => word.code.length > 1
+    ? '${MushafLayoutRepository.rtlOverride}${word.code}'
+        '${MushafLayoutRepository.popDirectionalFormatting}'
+    : word.code;
+
+double _naturalWidth(MushafWordsLine line, double fontSize) {
+  final painter = TextPainter(
+    text: TextSpan(children: [
+      for (final word in line.words)
+        TextSpan(text: _wordText(word), style: _wordStyle(word, fontSize)),
+    ]),
+    textDirection: TextDirection.rtl,
+    maxLines: 1,
+  )..layout();
+  final width = painter.width;
+  painter.dispose();
+  return width;
+}
+
 class _WordsLine extends StatelessWidget {
   const _WordsLine({
     required this.line,
-    required this.page,
-    required this.family,
+    required this.centered,
     required this.fontSize,
     required this.width,
     required this.height,
@@ -235,37 +318,18 @@ class _WordsLine extends StatelessWidget {
   });
 
   final MushafWordsLine line;
-  final MushafPage page;
-  final String family;
+
+  /// Lines that end a surah early (and pages 1–2) are centered in the
+  /// printed Mushaf; every other line is justified to the full width.
+  final bool centered;
   final double fontSize;
   final double width;
   final double height;
   final ValueNotifier<String?> selectedAyah;
   final ValueChanged<MushafWord> onTap;
 
-  /// Lines that end a surah early (and pages 1–2) are centered in the
-  /// printed Mushaf; every other line is justified to the full width.
-  bool _isShortLine(TextStyle style) {
-    if (page.isCentered) return true;
-    final last = line.words.last;
-    final endsSurah = last.isEnd &&
-        last.ayah ==
-            getIt<MushafLayoutRepository>().chapter(last.surah).versesCount;
-    if (!endsSurah) return false;
-    final painter = TextPainter(
-      text: TextSpan(text: line.words.map((w) => w.code).join(), style: style),
-      textDirection: TextDirection.rtl,
-      maxLines: 1,
-    )..layout();
-    final natural = painter.width;
-    painter.dispose();
-    return natural < width * 0.85;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final style = _glyphStyle(family, fontSize);
-    final centered = _isShortLine(style);
     return ValueListenableBuilder<String?>(
       valueListenable: selectedAyah,
       builder: (context, selected, _) {
@@ -280,7 +344,7 @@ class _WordsLine extends StatelessWidget {
                     ? EdgeInsets.symmetric(horizontal: fontSize * 0.12)
                     : null,
                 color: word.verseKey == selected ? _highlightColor : null,
-                child: Text(word.code, style: style),
+                child: Text(_wordText(word), style: _wordStyle(word, fontSize)),
               ),
             ),
         ];
@@ -293,7 +357,14 @@ class _WordsLine extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: words,
         );
-        if (centered) return Center(child: row);
+        if (centered) {
+          return Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(height: height, child: row),
+            ),
+          );
+        }
         // Justified to the width; a rare over-wide line is scaled down.
         return FittedBox(
           fit: BoxFit.scaleDown,
@@ -310,56 +381,63 @@ class _WordsLine extends StatelessWidget {
   }
 }
 
+/// The surah title frame: arabesque knots at both ends, "ترتيبها" and
+/// "آياتها" medallions, and the calligraphic surah name in a cartouche.
 class _SurahFrame extends StatelessWidget {
   const _SurahFrame({
     required this.number,
-    required this.name,
     required this.versesCount,
     required this.height,
-    required this.fontSize,
   });
 
   final int number;
-  final String name;
   final int versesCount;
   final double height;
-  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: height * 0.03),
-      child: CustomPaint(
-        painter: _SurahHeaderPainter(height: height),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: fontSize * 0.15,
-            vertical: height * 0.06,
-          ),
+    final h = height * 0.94;
+    final geometry = _SurahFrameGeometry(h);
+    return Center(
+      child: SizedBox(
+        height: h,
+        child: CustomPaint(
+          painter: _SurahFramePainter(geometry),
           child: Row(
             textDirection: TextDirection.rtl,
             children: [
-              _SurahMetaBox(
-                text: 'ترتيبها\n${arabicDigits(number)}',
-                width: fontSize * 3,
+              SizedBox(width: geometry.knotWidth),
+              _SurahMetaText(
+                label: 'ترتيبها',
+                value: number,
+                size: geometry.medallionRadius * 2,
               ),
               Expanded(
-                child: Text(
-                  'سُورَةُ $name',
-                  textAlign: TextAlign.center,
-                  textDirection: TextDirection.rtl,
-                  style: TextStyle(
-                    fontFamily: 'UthmanicHafs',
-                    fontSize: fontSize * 0.82,
-                    height: 1,
-                    color: mushafInkColor,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: h * 0.35,
+                    vertical: h * 0.18,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Text(
+                      surahNameGlyph(number),
+                      textDirection: TextDirection.rtl,
+                      style: const TextStyle(
+                        fontFamily: 'SurahNameV4',
+                        fontSize: 40,
+                        color: mushafInkColor,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              _SurahMetaBox(
-                text: 'آياتها\n${arabicDigits(versesCount)}',
-                width: fontSize * 3,
+              _SurahMetaText(
+                label: 'آياتها',
+                value: versesCount,
+                size: geometry.medallionRadius * 2,
               ),
+              SizedBox(width: geometry.knotWidth),
             ],
           ),
         ),
@@ -368,199 +446,397 @@ class _SurahFrame extends StatelessWidget {
   }
 }
 
-class _SurahMetaBox extends StatelessWidget {
-  const _SurahMetaBox({required this.text, required this.width});
+class _SurahFrameGeometry {
+  const _SurahFrameGeometry(this.height);
 
-  final String text;
-  final double width;
+  final double height;
+
+  double get knotWidth => height * 1.55;
+  double get medallionRadius => height * 0.36;
+}
+
+class _SurahMetaText extends StatelessWidget {
+  const _SurahMetaText({
+    required this.label,
+    required this.value,
+    required this.size,
+  });
+
+  final String label;
+  final int value;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.rtl,
-        style: const TextStyle(
-          fontFamily: 'UthmanicHafs',
-          fontSize: 15,
-          height: 1.05,
-          color: mushafInkColor,
+    return SizedBox.square(
+      dimension: size,
+      child: Padding(
+        padding: EdgeInsets.all(size * 0.16),
+        child: FittedBox(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: '$label\n'),
+              TextSpan(text: arabicDigits(value), style: _digitsStyle),
+            ]),
+            textAlign: TextAlign.center,
+            textDirection: TextDirection.rtl,
+            style: const TextStyle(
+              fontFamily: 'UthmanicHafs',
+              fontSize: 14,
+              height: 1.1,
+              color: mushafInkColor,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _PageHeader extends StatelessWidget {
-  const _PageHeader({
-    required this.surahNumber,
-    required this.surahName,
-    required this.versesCount,
-    required this.juz,
-  });
+/// UthmanicHafs draws digit runs as ayah-end rosettes, so numbers use a
+/// plain Arabic face.
+const TextStyle _digitsStyle = TextStyle(
+  fontFamily: 'IBM Plex Sans Arabic',
+  fontWeight: FontWeight.w500,
+  color: mushafInkColor,
+);
 
-  final int surahNumber;
+class _PageHeader extends StatelessWidget {
+  const _PageHeader({required this.surahName, required this.juz});
+
   final String surahName;
-  final int versesCount;
   final int juz;
 
   @override
   Widget build(BuildContext context) {
     return Row(
+      textDirection: TextDirection.rtl,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _TopLabelBox(
-          text: 'الجزء ${arabicJuzName(juz)}',
-          width: 108.w,
-        ),
-        _TopLabelBox(
-          text: 'سورة $surahName',
-          width: 108.w,
-        ),
+        _TopLabelBox(text: 'الجزء ${arabicJuzName(juz)}'),
+        _TopLabelBox(text: 'سورة $surahName'),
       ],
     );
   }
 }
 
 class _TopLabelBox extends StatelessWidget {
-  const _TopLabelBox({required this.text, required this.width});
+  const _TopLabelBox({required this.text});
 
   final String text;
-  final double width;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: width,
-      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+      constraints: BoxConstraints(minWidth: 84.w, maxWidth: 130.w),
+      padding: EdgeInsets.all(1.5.w),
       decoration: BoxDecoration(
-        color: const Color(0xfff1e4d4),
-        border: Border.all(color: const Color(0xff394b55), width: 1.2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x55394b55),
-            offset: Offset(1, 1),
-            blurRadius: 0,
+        color: _frameLight,
+        border: Border.all(color: _frameInk, width: 1),
+      ),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
+        decoration: BoxDecoration(
+          border: Border.all(color: _frameRed, width: 0.8),
+        ),
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.rtl,
+          style: TextStyle(
+            fontFamily: 'UthmanicHafs',
+            fontSize: 12.sp,
+            height: 1.3,
+            color: mushafInkColor,
           ),
-        ],
-      ),
-      child: Text(
-        text,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.rtl,
-        style: TextStyles.greyRegular15.copyWith(
-          fontFamily: 'UthmanicHafs',
-          fontSize: 11.sp,
-          height: 1.05,
-          color: mushafInkColor,
         ),
       ),
     );
   }
 }
 
-class _MushafBorderPainter extends CustomPainter {
-  const _MushafBorderPainter();
+class _PageNumberMedallion extends StatelessWidget {
+  const _PageNumberMedallion({required this.number, required this.height});
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final outerRect = Offset.zero & size;
-    _stroke(canvas, outerRect.deflate(2), const Color(0xff53626a), 7);
-    _stroke(canvas, outerRect.deflate(7), const Color(0xffc97678), 2);
-    _stroke(canvas, outerRect.deflate(10), const Color(0xff394b55), 2);
-    _stroke(canvas, outerRect.deflate(14), const Color(0xffc97678), 1);
-
-    const step = 30.0;
-    for (var x = 15.0; x < size.width - 12; x += step) {
-      _drawFloralMotif(canvas, Offset(x, 6));
-      _drawFloralMotif(canvas, Offset(x, size.height - 6));
-    }
-    for (var y = 28.0; y < size.height - 20; y += step) {
-      _drawFloralMotif(canvas, Offset(6, y));
-      _drawFloralMotif(canvas, Offset(size.width - 6, y));
-    }
-  }
-
-  static void _stroke(Canvas canvas, Rect rect, Color color, double width) {
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = width,
-    );
-  }
-
-  static void _drawFloralMotif(Canvas canvas, Offset center) {
-    final outline = Paint()
-      ..color = const Color(0xff394b55)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final petal = Paint()..color = const Color(0xffc97678);
-    canvas.drawCircle(center, 7, outline);
-    canvas.drawCircle(center, 3, petal);
-    for (var i = 0; i < 4; i++) {
-      final angle = i * math.pi / 2;
-      canvas.drawCircle(
-        Offset(
-          center.dx + math.cos(angle) * 5,
-          center.dy + math.sin(angle) * 5,
-        ),
-        2.3,
-        petal,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MushafBorderPainter oldDelegate) => false;
-}
-
-class _SurahHeaderPainter extends CustomPainter {
-  const _SurahHeaderPainter({required this.height});
-
+  final int number;
   final double height;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.drawRect(rect, Paint()..color = const Color(0xfff1e4d4));
-    _stroke(canvas, rect.deflate(1), const Color(0xff394b55), 2);
-    _stroke(canvas, rect.deflate(4), const Color(0xffb76f68), 3);
-    _stroke(canvas, rect.deflate(8), const Color(0xff394b55), 1);
-    _drawSideOrnament(canvas, Offset(12, size.height / 2));
-    _drawSideOrnament(canvas, Offset(size.width - 12, size.height / 2));
-  }
-
-  static void _stroke(Canvas canvas, Rect rect, Color color, double width) {
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = width,
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: height * 2.6,
+      height: height,
+      child: CustomPaint(
+        painter: const _MedallionPainter(),
+        child: Center(
+          child: Text(
+            arabicDigits(number),
+            textDirection: TextDirection.rtl,
+            style: _digitsStyle.copyWith(fontSize: height * 0.48, height: 1),
+          ),
+        ),
+      ),
     );
   }
+}
 
-  static void _drawSideOrnament(Canvas canvas, Offset center) {
-    final outline = Paint()
-      ..color = const Color(0xff394b55)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final petal = Paint()..color = const Color(0xffc97678);
-    canvas.drawCircle(center, 9, outline);
-    canvas.drawCircle(center, 4, petal);
-    canvas.drawCircle(center.translate(0, -7), 2.5, petal);
-    canvas.drawCircle(center.translate(0, 7), 2.5, petal);
+Paint _fill(Color color) => Paint()..color = color;
+
+Paint _stroke(Color color, double width) => Paint()
+  ..color = color
+  ..style = PaintingStyle.stroke
+  ..strokeWidth = width;
+
+/// A tulip pointing up from [Offset.zero], [size] tall.
+Path _tulipPath(double size) {
+  final s = size;
+  return Path()
+    ..moveTo(0, 0)
+    ..quadraticBezierTo(-s * 0.32, -s * 0.5, 0, -s)
+    ..quadraticBezierTo(s * 0.32, -s * 0.5, 0, 0)
+    ..moveTo(0, -s * 0.08)
+    ..quadraticBezierTo(-s * 0.62, -s * 0.18, -s * 0.5, -s * 0.78)
+    ..quadraticBezierTo(-s * 0.2, -s * 0.42, 0, -s * 0.08)
+    ..moveTo(0, -s * 0.08)
+    ..quadraticBezierTo(s * 0.62, -s * 0.18, s * 0.5, -s * 0.78)
+    ..quadraticBezierTo(s * 0.2, -s * 0.42, 0, -s * 0.08);
+}
+
+/// A rosette of [petals] round petals around a red heart.
+void _drawRosette(Canvas canvas, Offset c, double r, {int petals = 8}) {
+  for (var i = 0; i < petals; i++) {
+    final a = i * 2 * math.pi / petals;
+    final p = c + Offset(math.cos(a), math.sin(a)) * r * 0.62;
+    canvas
+      ..drawCircle(p, r * 0.34, _fill(_framePink))
+      ..drawCircle(p, r * 0.34, _stroke(_frameRed, r * 0.08));
+  }
+  canvas
+    ..drawCircle(c, r * 0.36, _fill(_frameRed))
+    ..drawCircle(c, r * 0.36, _stroke(_frameInk, r * 0.06));
+}
+
+/// The printed page border: a band of red tulips between blue-grey rules,
+/// rosettes in the corners and a double rule around the text.
+class _MushafFramePainter extends CustomPainter {
+  const _MushafFramePainter(this.band);
+
+  final double band;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final b = band;
+    final outer = (Offset.zero & size).deflate(0.8);
+    final inner = outer.deflate(b);
+    canvas
+      ..drawRect(outer, _fill(_frameLight))
+      ..drawRect(inner, _fill(_cream))
+      ..drawRect(outer, _stroke(_frameInk, 1.6))
+      ..drawRect(outer.deflate(2.2), _stroke(_frameRed, 0.8))
+      ..drawRect(inner.inflate(2.2), _stroke(_frameRed, 0.8))
+      ..drawRect(inner, _stroke(_frameInk, 1.4))
+      ..drawRect(inner.deflate(2.6), _stroke(_frameRed, 1))
+      ..drawRect(inner.deflate(4.4), _stroke(_frameInk, 0.7));
+
+    final mid = b / 2;
+    _side(canvas, Offset(outer.left + b, outer.top + mid), outer.width - 2 * b,
+        0);
+    _side(canvas, Offset(outer.right - b, outer.bottom - mid),
+        outer.width - 2 * b, math.pi);
+    _side(canvas, Offset(outer.right - mid, outer.top + b),
+        outer.height - 2 * b, math.pi / 2);
+    _side(canvas, Offset(outer.left + mid, outer.bottom - b),
+        outer.height - 2 * b, -math.pi / 2);
+
+    for (final corner in [
+      outer.topLeft + Offset(mid, mid),
+      outer.topRight + Offset(-mid, mid),
+      outer.bottomLeft + Offset(mid, -mid),
+      outer.bottomRight + Offset(-mid, -mid),
+    ]) {
+      final square = Rect.fromCenter(center: corner, width: b, height: b);
+      canvas
+        ..drawRect(square, _fill(_framePink))
+        ..drawRect(square.deflate(1), _stroke(_frameInk, 1));
+      _drawRosette(canvas, corner, b * 0.4);
+    }
+  }
+
+  /// Tulips along a side of [length] starting at [start], running in
+  /// direction [angle]; they alternate pointing out and in.
+  void _side(Canvas canvas, Offset start, double length, double angle) {
+    final b = band;
+    final count = math.max(1, (length / (b * 1.3)).round());
+    final step = length / count;
+    canvas
+      ..save()
+      ..translate(start.dx, start.dy)
+      ..rotate(angle);
+    for (var i = 0; i < count; i++) {
+      final x = step * (i + 0.5);
+      final up = i.isEven;
+      canvas
+        ..save()
+        ..translate(x, up ? b * 0.34 : -b * 0.34)
+        ..rotate(up ? 0 : math.pi);
+      final tulip = _tulipPath(b * 0.68);
+      canvas
+        ..drawPath(tulip, _fill(_frameRed))
+        ..drawPath(tulip, _stroke(_frameInk, 0.7))
+        ..restore();
+      // Blue-grey leaves between the tulips.
+      final leaf = Rect.fromCenter(
+        center: Offset(step * (i + 1), 0),
+        width: b * 0.22,
+        height: b * 0.5,
+      );
+      if (i < count - 1) canvas.drawOval(leaf, _fill(_frameInk));
+    }
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _SurahHeaderPainter oldDelegate) =>
-      oldDelegate.height != height;
+  bool shouldRepaint(covariant _MushafFramePainter oldDelegate) =>
+      oldDelegate.band != band;
+}
+
+class _SurahFramePainter extends CustomPainter {
+  const _SurahFramePainter(this.geometry);
+
+  final _SurahFrameGeometry geometry;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final h = size.height;
+    final rect = (Offset.zero & size).deflate(0.8);
+    canvas
+      ..drawRect(rect, _fill(_framePink))
+      ..drawRect(rect, _stroke(_frameInk, 1.5))
+      ..drawRect(rect.deflate(h * 0.07), _stroke(_frameRed, 1))
+      ..drawRect(rect.deflate(h * 0.11), _stroke(_frameInk, 0.6));
+
+    final knot = geometry.knotWidth;
+    _drawKnot(canvas, Offset(knot / 2 + h * 0.08, h / 2), h);
+    _drawKnot(canvas, Offset(size.width - knot / 2 - h * 0.08, h / 2), h);
+
+    // Cartouche with pointed ends between the two medallions.
+    final r = geometry.medallionRadius;
+    final left = knot + r * 2 - r * 0.3;
+    final right = size.width - knot - r * 2 + r * 0.3;
+    Path cartouche(double inset) {
+      final l = left + inset * 1.6;
+      final rt = right - inset * 1.6;
+      final top = h * 0.16 + inset;
+      final bottom = h * 0.84 - inset;
+      final tip = h * 0.34;
+      return Path()
+        ..moveTo(l, h / 2)
+        ..quadraticBezierTo(l + tip * 0.2, top, l + tip, top)
+        ..lineTo(rt - tip, top)
+        ..quadraticBezierTo(rt - tip * 0.2, top, rt, h / 2)
+        ..quadraticBezierTo(rt - tip * 0.2, bottom, rt - tip, bottom)
+        ..lineTo(l + tip, bottom)
+        ..quadraticBezierTo(l + tip * 0.2, bottom, l, h / 2)
+        ..close();
+    }
+
+    final outline = cartouche(0);
+    canvas
+      ..drawPath(outline, _fill(_cream))
+      ..drawPath(outline, _stroke(_frameInk, 1.2))
+      ..drawPath(cartouche(h * 0.05), _stroke(_frameRed, 0.7));
+
+    _drawMedallion(canvas, Offset(size.width - knot - r, h / 2), r);
+    _drawMedallion(canvas, Offset(knot + r, h / 2), r);
+  }
+
+  /// Interlaced loops around a rosette, inside a rounded panel.
+  static void _drawKnot(Canvas canvas, Offset c, double h) {
+    final panel = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: c, width: h * 1.3, height: h * 0.72),
+      Radius.circular(h * 0.36),
+    );
+    canvas
+      ..drawRRect(panel, _fill(_frameLight))
+      ..drawRRect(panel, _stroke(_frameInk, 0.9));
+    final loop = _stroke(_frameRed, h * 0.045);
+    for (final dx in [-1.0, 1.0]) {
+      canvas
+        ..drawOval(
+          Rect.fromCenter(
+            center: c.translate(dx * h * 0.3, 0),
+            width: h * 0.52,
+            height: h * 0.52,
+          ),
+          loop,
+        )
+        ..drawOval(
+          Rect.fromCenter(
+            center: c.translate(dx * h * 0.18, 0),
+            width: h * 0.42,
+            height: h * 0.62,
+          ),
+          loop,
+        );
+    }
+    _drawRosette(canvas, c, h * 0.2);
+  }
+
+  /// A scalloped round medallion holding "ترتيبها" / "آياتها".
+  static void _drawMedallion(Canvas canvas, Offset c, double r) {
+    const scallops = 12;
+    for (var i = 0; i < scallops; i++) {
+      final a = i * 2 * math.pi / scallops;
+      final p = c + Offset(math.cos(a), math.sin(a)) * r * 0.9;
+      canvas
+        ..drawCircle(p, r * 0.2, _fill(_frameRed))
+        ..drawCircle(p, r * 0.2, _stroke(_frameInk, 0.5));
+    }
+    canvas
+      ..drawCircle(c, r * 0.9, _fill(_cream))
+      ..drawCircle(c, r * 0.9, _stroke(_frameInk, 1))
+      ..drawCircle(c, r * 0.8, _stroke(_frameRed, 0.6));
+  }
+
+  @override
+  bool shouldRepaint(covariant _SurahFramePainter oldDelegate) =>
+      oldDelegate.geometry.height != geometry.height;
+}
+
+/// The page-number cartouche sitting on the bottom border.
+class _MedallionPainter extends CustomPainter {
+  const _MedallionPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final h = size.height;
+    final w = size.width;
+    final c = Offset(w / 2, h / 2);
+    // Pointed ends.
+    final tips = Path()
+      ..moveTo(0, h / 2)
+      ..lineTo(w * 0.2, h * 0.22)
+      ..lineTo(w * 0.8, h * 0.22)
+      ..lineTo(w, h / 2)
+      ..lineTo(w * 0.8, h * 0.78)
+      ..lineTo(w * 0.2, h * 0.78)
+      ..close();
+    final body = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: c, width: w * 0.66, height: h * 0.92),
+      Radius.circular(h * 0.46),
+    );
+    canvas
+      ..drawPath(tips, _fill(_framePink))
+      ..drawPath(tips, _stroke(_frameInk, 1))
+      ..drawRRect(body, _fill(_cream))
+      ..drawRRect(body, _stroke(_frameInk, 1.3))
+      ..drawRRect(body.deflate(h * 0.08), _stroke(_frameRed, 0.8));
+  }
+
+  @override
+  bool shouldRepaint(covariant _MedallionPainter oldDelegate) => false;
 }
 
 class _FontError extends StatelessWidget {

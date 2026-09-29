@@ -150,7 +150,8 @@ class _AyahGlyphsState extends State<_AyahGlyphs> {
       .ayahSegments(widget.surah, widget.ayah, widget.page);
   late final Future<void> _fontsReady = Future.wait([
     for (final segment in _segments)
-      getIt<QcfFontManager>().ensurePageFont(segment.page),
+      for (final font in {for (final w in segment.words) w.font})
+        getIt<QcfFontManager>().ensureFont(font),
   ]);
 
   @override
@@ -170,17 +171,24 @@ class _AyahGlyphsState extends State<_AyahGlyphs> {
             border: Border.all(color: const Color(0xffe3d9b8)),
           ),
           child: Text.rich(
+            // QPC v4 glyphs are bidi-LTR; force them right to left.
             TextSpan(children: [
+              const TextSpan(text: MushafLayoutRepository.rtlOverride),
               for (final segment in _segments)
-                TextSpan(
-                  text: '${segment.words.map((w) => w.code).join(' ')} ',
-                  style: TextStyle(
-                    fontFamily: QcfFontManager.familyFor(segment.page),
-                    fontSize: 22.sp,
-                    height: 1.9,
-                    color: mushafInkColor,
+                for (final word in segment.words)
+                  TextSpan(
+                    text: '${word.code} ',
+                    style: TextStyle(
+                      fontFamily: QcfFontManager.familyFor(word.font),
+                      fontSize: 22.sp,
+                      height: 1.9,
+                      color:
+                          word.isEnd ? mushafAyahMarkerColor : mushafInkColor,
+                    ),
                   ),
-                ),
+              const TextSpan(
+                text: MushafLayoutRepository.popDirectionalFormatting,
+              ),
             ]),
             textAlign: TextAlign.center,
             textDirection: TextDirection.rtl,

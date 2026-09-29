@@ -62,6 +62,9 @@ flutter:
     - family: QCFBismillah
       fonts:
         - asset: assets/fonts/QCF_BSML.ttf
+    - family: SurahNameV4
+      fonts:
+        - asset: assets/fonts/surah-name-v4-color.ttf
     - family: IBM Plex Sans Arabic
       fonts:
         - asset: assets/fonts/IBMPlexSansArabic-Thin.ttf

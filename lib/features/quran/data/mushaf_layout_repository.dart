@@ -40,6 +40,12 @@ class MushafLayoutRepository {
 
   int startPageOf(int surah) => chapter(surah).startPage;
 
+  /// The QPC v4 fonts the words of [number] render with.
+  Set<int> fontsOf(int number) => {
+        for (final line in page(number).lines.whereType<MushafWordsLine>())
+          for (final word in line.words) word.font,
+      };
+
   /// The glyphs of ayah [surah]:[ayah] grouped by page (an ayah may run over
   /// onto the next page), searched around [nearPage].
   List<({int page, List<MushafWord> words})> ayahSegments(
@@ -58,12 +64,19 @@ class MushafLayoutRepository {
   }
 
   /// Glyphs of the bismillah as printed on page 1 (Al-Fatiha, ayah 1),
-  /// without the ayah-number marker. Rendered with page 1's font.
+  /// without the ayah-number marker. Rendered with QPC v4 font 1.
+  ///
+  /// The glyphs are Private-Use codepoints, which bidi treats as LTR, so the
+  /// string is wrapped in a right-to-left override.
   String get bismillahGlyphs {
     final line = page(1).lines.whereType<MushafWordsLine>().first;
-    return line.words
+    final words = line.words
         .where((w) => w.ayah == 1 && !w.isEnd)
         .map((w) => w.code)
         .join(' ');
+    return '$rtlOverride$words$popDirectionalFormatting';
   }
+
+  static const String rtlOverride = '\u202E';
+  static const String popDirectionalFormatting = '\u202C';
 }

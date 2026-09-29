@@ -91,7 +91,11 @@ class _MushafScreenState extends State<MushafScreen> {
 
   void _onPageChanged(int index) {
     final page = index + 1;
-    _fonts.prefetch([page, page + 1, page - 1, page + 2, page - 2]);
+    _fonts.prefetch([
+      for (final p in [page, page + 1, page - 1, page + 2, page - 2])
+        if (p >= 1 && p <= MushafLayoutRepository.totalPages)
+          ..._repo.fontsOf(p),
+    ]);
     final surah = _repo.page(page).firstSurah;
     setState(() => _currentPage = page);
     // Keep the playing surah until the user stops it.
@@ -185,7 +189,8 @@ class _MushafScreenState extends State<MushafScreen> {
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return Center(
-                child: Text('تعذر تحميل المصحف', style: TextStyles.greyRegular15),
+                child:
+                    Text('تعذر تحميل المصحف', style: TextStyles.greyRegular15),
               );
             }
             final controller = _pageController;
