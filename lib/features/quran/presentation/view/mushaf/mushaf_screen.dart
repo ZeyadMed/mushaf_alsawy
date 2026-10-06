@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mushaf_alsawy/core/helpers/arabic_digits.dart';
 import 'package:mushaf_alsawy/core/helpers/generic_data_source.dart';
@@ -34,15 +35,20 @@ class _MushafScreenState extends State<MushafScreen> {
   final _fonts = getIt<QcfFontManager>();
   late final Future<void> _layoutReady;
   PageController? _pageController;
+
+  /// Built once: rebuilding the screen (page counter, audio) leaves the
+  /// pages alone.
+  Widget? _pager;
   final ValueNotifier<String?> _selectedAyah = ValueNotifier(null);
-  int _currentPage = 1;
+  final ValueNotifier<int> _currentPage = ValueNotifier(1);
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   final List<StreamSubscription<Object?>> _subscriptions = [];
   final Map<int, String?> _audioUrls = {};
+  final Set<int> _fetchingAudio = {};
   int? _audioSurah;
   Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
+  final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
   bool _isPlaying = false;
   bool _isLoadingAudio = false;
 
@@ -50,9 +56,11 @@ class _MushafScreenState extends State<MushafScreen> {
   void initState() {
     super.initState();
     _layoutReady = _repo.load().then((_) {
+      if (!mounted) return;
       final page = _repo.startPageOf(widget.initialSurah);
       _pageController = PageController(initialPage: page - 1);
       _onPageChanged(page - 1);
+      _prefetchAround(page);
     });
     _subscriptions.addAll([
       _audioPlayer.onPlayerStateChanged.listen((state) {
@@ -66,14 +74,12 @@ class _MushafScreenState extends State<MushafScreen> {
         if (mounted) setState(() => _duration = duration);
       }),
       _audioPlayer.onPositionChanged.listen((position) {
-        if (mounted) setState(() => _position = position);
+        if (mounted) _position.value = position;
       }),
       _audioPlayer.onPlayerComplete.listen((_) {
         if (!mounted) return;
-        setState(() {
-          _isPlaying = false;
-          _position = Duration.zero;
-        });
+        setState(() => _isPlaying = false);
+        _position.value = Duration.zero;
       }),
     ]);
   }
@@ -82,6 +88,8 @@ class _MushafScreenState extends State<MushafScreen> {
   void dispose() {
     _pageController?.dispose();
     _selectedAyah.dispose();
+    _currentPage.dispose();
+    _position.dispose();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
@@ -89,38 +97,63 @@ class _MushafScreenState extends State<MushafScreen> {
     super.dispose();
   }
 
+  /// Called mid-swipe, so it only updates the counter and the audio bar.
   void _onPageChanged(int index) {
     final page = index + 1;
-    _fonts.prefetch([
-      for (final p in [page, page + 1, page - 1, page + 2, page - 2])
-        if (p >= 1 && p <= MushafLayoutRepository.totalPages)
-          ..._repo.fontsOf(p),
-    ]);
+    _currentPage.value = page;
     final surah = _repo.page(page).firstSurah;
-    setState(() => _currentPage = page);
     // Keep the playing surah until the user stops it.
     if (!_isPlaying && surah != _audioSurah) _switchAudioSurah(surah);
   }
 
+  /// Registering a font and measuring a page wait for the swipe to end, so
+  /// that their work does not land on the frames of the page animation.
+  bool _onScrollEnd(ScrollEndNotification notification) {
+    if (notification.depth == 0) _prefetchAround(_currentPage.value);
+    return false;
+  }
+
+  /// Loads the fonts of the pages around [page], mostly ahead in reading
+  /// order: a font covers ~13 pages, so a new one is ready a few pages before
+  /// it is needed. Also measures, between frames, the pages the next swipe
+  /// builds (the ones beside [page] are already built).
+  void _prefetchAround(int page) {
+    bool exists(int p) => p >= 1 && p <= MushafLayoutRepository.totalPages;
+    _fonts.prefetch({
+      for (var p = page - 2; p <= page + 5; p++)
+        if (exists(p)) ..._repo.fontsOf(p),
+    });
+    for (final p in [page + 2, page - 2]) {
+      if (!exists(p)) continue;
+      SchedulerBinding.instance.scheduleTask(
+        () => precacheMushafPage(_repo.page(p)),
+        // Not idle: that waits for every animation (a loading spinner) to end.
+        Priority.animation,
+      );
+    }
+  }
+
   Future<void> _switchAudioSurah(int surah) async {
-    _audioSurah = surah;
-    if (_position != Duration.zero) {
+    setState(() => _audioSurah = surah);
+    if (_position.value != Duration.zero) {
       await _audioPlayer.stop();
-      _position = Duration.zero;
+      if (!mounted) return;
+      _position.value = Duration.zero;
       _duration = Duration.zero;
     }
-    if (_audioUrls.containsKey(surah)) return;
+    if (_audioUrls.containsKey(surah) || !_fetchingAudio.add(surah)) return;
     final result =
         await GenericDataSource(getIt()).fetchResult<SurahContentResponse>(
       endpoint: Endpoints.surahContent(surah),
       queryParameters: {'number': surah, 'pageIndex': 1, 'pageSize': 1},
       fromJson: SurahContentResponse.fromJson,
     );
+    _fetchingAudio.remove(surah);
     result.fold((_) {}, (response) {
       final url = response.audioUrl?.replaceAll('`', '').trim();
       _audioUrls[surah] = url == null || url.isEmpty ? null : url;
-      if (mounted) setState(() {});
     });
+    if (mounted) setState(() {});
   }
 
   String? get _audioUrl => _audioUrls[_audioSurah];
@@ -135,7 +168,7 @@ class _MushafScreenState extends State<MushafScreen> {
     }
     setState(() => _isLoadingAudio = true);
     try {
-      if (_position == Duration.zero) {
+      if (_position.value == Duration.zero) {
         await _audioPlayer.play(UrlSource(url));
       } else {
         await _audioPlayer.resume();
@@ -154,7 +187,7 @@ class _MushafScreenState extends State<MushafScreen> {
   Future<void> _seekAudio(double value) async {
     final position = Duration(milliseconds: value.round());
     await _audioPlayer.seek(position);
-    if (mounted) setState(() => _position = position);
+    if (mounted) _position.value = position;
   }
 
   Future<void> _onAyahTap(MushafWord word, MushafPage page) async {
@@ -201,44 +234,64 @@ class _MushafScreenState extends State<MushafScreen> {
             }
             return Column(
               children: [
-                Expanded(
-                  // RTL like a paper Mushaf: the next page comes in from the left.
-                  child: Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: PageView.builder(
-                      controller: controller,
-                      itemCount: MushafLayoutRepository.totalPages,
-                      onPageChanged: _onPageChanged,
-                      itemBuilder: (context, index) => MushafPageWidget(
-                        page: _repo.page(index + 1),
-                        selectedAyah: _selectedAyah,
-                        onAyahTap: _onAyahTap,
-                      ),
+                Expanded(child: _pager ??= _buildPager(controller)),
+                Padding(
+                  padding: EdgeInsets.only(top: 6.h),
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: _currentPage,
+                    builder: (context, page, _) => Text(
+                      'صفحة ${arabicDigits(page)} / ${arabicDigits(MushafLayoutRepository.totalPages)}',
+                      textDirection: TextDirection.rtl,
+                      style: TextStyles.greyRegular15.copyWith(fontSize: 12.sp),
                     ),
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.only(top: 6.h),
-                  child: Text(
-                    'صفحة ${arabicDigits(_currentPage)} / ${arabicDigits(MushafLayoutRepository.totalPages)}',
-                    textDirection: TextDirection.rtl,
-                    style: TextStyles.greyRegular15.copyWith(fontSize: 12.sp),
-                  ),
+                // Always shown, so the pages never change size (and relayout)
+                // while a surah's recitation loads.
+                ValueListenableBuilder<Duration>(
+                  valueListenable: _position,
+                  builder: (context, position, _) {
+                    final surah = _audioSurah;
+                    return QuranAudioBar(
+                      title: surah == null
+                          ? 'السورة'
+                          : 'سورة ${_repo.chapter(surah).name}',
+                      isPlaying: _isPlaying,
+                      isLoading:
+                          _isLoadingAudio || _fetchingAudio.contains(surah),
+                      position: position,
+                      duration: _duration,
+                      onToggle: _audioUrl == null ? null : _toggleAudio,
+                      onSeek: _seekAudio,
+                    );
+                  },
                 ),
-                if (_audioUrl != null)
-                  QuranAudioBar(
-                    title: 'سورة ${_repo.chapter(_audioSurah!).name}',
-                    isPlaying: _isPlaying,
-                    isLoading: _isLoadingAudio,
-                    position: _position,
-                    duration: _duration,
-                    onToggle: _toggleAudio,
-                    onSeek: _seekAudio,
-                  ),
                 SizedBox(height: 10.h),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPager(PageController controller) {
+    return NotificationListener<ScrollEndNotification>(
+      onNotification: _onScrollEnd,
+      // RTL like a paper Mushaf: the next page comes in from the left.
+      child: Directionality(
+        textDirection: TextDirection.rtl,
+        child: PageView.builder(
+          controller: controller,
+          // Keeps the pages on either side built, so a swipe only shows them.
+          allowImplicitScrolling: true,
+          itemCount: MushafLayoutRepository.totalPages,
+          onPageChanged: _onPageChanged,
+          itemBuilder: (context, index) => MushafPageWidget(
+            page: _repo.page(index + 1),
+            selectedAyah: _selectedAyah,
+            onAyahTap: _onAyahTap,
+          ),
         ),
       ),
     );

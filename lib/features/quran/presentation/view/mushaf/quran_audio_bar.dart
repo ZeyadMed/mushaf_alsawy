@@ -21,7 +21,9 @@ class QuranAudioBar extends StatelessWidget {
   final bool isLoading;
   final Duration position;
   final Duration duration;
-  final VoidCallback onToggle;
+
+  /// Null while the surah's recitation is unavailable.
+  final VoidCallback? onToggle;
   final ValueChanged<double> onSeek;
 
   @override
@@ -42,28 +44,37 @@ class QuranAudioBar extends StatelessWidget {
         textDirection: TextDirection.ltr,
         child: Row(
           children: [
-            if (isLoading)
-              const SizedBox(
-                width: 38,
-                height: 38,
-                child: CircularProgressIndicator(
-                  color: AppColors.primaryColor,
-                  strokeWidth: 3,
-                ),
-              )
-            else
-              IconButton(
-                onPressed: onToggle,
-                icon: Icon(
-                  isPlaying
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_fill,
-                  color: AppColors.primaryColor,
-                  size: 38,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
-              ),
+            // The button's tap target (48), so the bar keeps its height
+            // while loading and the Mushaf pages above never resize.
+            SizedBox.square(
+              dimension: 48,
+              child: isLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 38,
+                        height: 38,
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryColor,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      onPressed: onToggle,
+                      icon: Icon(
+                        isPlaying
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_fill,
+                        color: onToggle == null
+                            ? AppColors.greyColor
+                            : AppColors.primaryColor,
+                        size: 38,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints:
+                          const BoxConstraints(minWidth: 38, minHeight: 38),
+                    ),
+            ),
             SizedBox(width: 8.w),
             Expanded(
               child: Column(
